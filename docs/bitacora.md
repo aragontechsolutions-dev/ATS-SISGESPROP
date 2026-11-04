@@ -82,3 +82,39 @@ publicar).
   `aragontechsolutions-dev/ATS-SISGESPROP` y se documentó el traspaso en la
   [guía técnica, sección 10](guia-tecnica.md#10-traspaso-al-repositorio-del-cliente).
 - La prueba e2e ahora verifica que el título y el encabezado muestren PRIVAT.
+
+## 2026-11-04 – Etapa 1, bloque D (días 10–13 del plan) – Hito 3
+
+**Repositorio:** el PR #1 ya estaba fusionado. Se abrió aragontechsolutions-dev/ATS-SISGESPROP#2 con
+PRIVAT; los commits del Bloque D se suman a esa misma rama.
+
+**Hecho**
+1. **D1 – API del panel:** contenidos con esquema por sección, niveles, FAQ, testimonios, 15 perfiles
+   validados con el motor, viáticos, parámetros, simulación de prueba, publicar/historial/restaurar,
+   consultas con CSV seguro y auditoría. `quoteFor` es la única implementación del cálculo.
+2. **D2 – Panel web `/admin/`:** página aparte con Supabase Auth, 2FA TOTP, `sessionStorage` y cierre
+   por inactividad; cinco pestañas.
+3. **D3 – Contenido publicado en la landing:** `fetch-content.mjs` + `content.ts` con respaldo;
+   el build falla en producción si no hay contenido publicado.
+4. **Pruebas:**
+   - API: 79 (antes 57);
+   - e2e del panel: 15 pasos (Auth simulado según el código fuente de `auth-js`);
+   - e2e de la landing: 10 pasos, también con contenido publicado.
+
+**Hallazgos durante el desarrollo**
+- **Defecto de diseño:** no se podía revocar ni borrar un administrador con historial (la auditoría
+  inmutable lo impedía) → se desactivan con `disabled_at` y las FK pasan a NO ACTION
+  ([ADR-012](adr/ADR-012-administradores-se-desactivan.md)).
+- **Defecto en una migración:** la migración de seguridad fallaba en la base *shadow* de Prisma
+  (`_prisma_migrations` inexistente) → se hizo condicional. Se modificó una migración ya aplicada porque
+  todavía no existe ninguna base de producción.
+- **Defecto de interfaz:** el mensaje "Publicado." desaparecía al recargar los datos (`useLoad`).
+  Lo detectó la prueba e2e.
+- **Lógica redundante** en `GET /admin/pricing` (consultas duplicadas) → simplificada.
+- **Pruebas:** `fetch().text()` descarta el BOM, así que se verifican los bytes crudos. `audit_log`
+  acumula datos entre corridas, así que se miden diferencias.
+- **Política de espera de versiones:** `supabase-js` 2.119.0 se publicó el mismo día → se usó 2.118.0.
+
+**Siguiente:**
+- D4: imágenes con URL firmada, cuando existan Supabase Storage y las fotos.
+- Bloque E: calidad (OWASP ZAP, Lighthouse, accesibilidad, e2e en el CI) y entrega.

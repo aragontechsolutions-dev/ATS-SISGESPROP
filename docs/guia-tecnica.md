@@ -69,6 +69,8 @@ Ver `apps/api/.env.example`. La API **no arranca** si falta una variable crític
 | `TRUST_PROXY_HOPS` | Proxies de confianza delante de la API (Render: valor inicial 1, **a verificar** en el despliegue) |
 | `TURNSTILE_SECRET_KEY` | Clave **secreta** de Cloudflare Turnstile (solo en Render) |
 | `TURNSTILE_ALLOWED_HOSTNAMES` | Dominios del sitio aceptados en el token (obligatorio en producción) |
+| `VERCEL_DEPLOY_HOOK_URL` | Opcional y secreto. "Publicar" lo llama para recompilar la web |
+| `SHADOW_DATABASE_URL` | Solo desarrollo: base vacía y descartable para `prisma migrate diff --from-migrations` |
 
 ### 3.4 bis Variables de la web (`apps/web/.env.example`)
 Son **públicas** (quedan dentro del JavaScript): nunca poner secretos.
@@ -78,6 +80,8 @@ Son **públicas** (quedan dentro del JavaScript): nunca poner secretos.
 | `VITE_API_URL` | URL de la API. Obligatoria: también se usa para generar la CSP (`connect-src`) |
 | `VITE_TURNSTILE_SITE_KEY` | Clave **de sitio** (pública) de Turnstile |
 | `VITE_SITE_URL` | URL pública del sitio (canonical, sitemap). Sin ella no se generan |
+| `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | Panel: URL del proyecto y clave **publicable** (nunca la service role) |
+| `REQUIRE_PUBLISHED_CONTENT` | `true` en Vercel: el build falla si no puede leer el contenido publicado ([ADR-014](adr/ADR-014-contenido-publicado-en-el-build.md)) |
 
 ### 3.5 Pruebas
 ```bash
@@ -104,7 +108,30 @@ curl localhost:3000/health
 | `POST /public/travel-estimate` | Público, 20/min por IP | Entrada `lat`, `lng`. Devuelve `distanceKm`, `billableKm`, `travelCostPerVisit` (no guarda nada) |
 | `POST /public/simulations` | Público, 10/min por IP | Cotización. Entrada: `propertyTypeCode`, `serviceLevel` (1–3), `lat`, `lng` |
 | `POST /public/leads` | Público, 5/min por IP + Turnstile | Formulario de diagnóstico. Ver ADR-009 |
+| `GET /public/content` | Público | Contenido de la última publicación (sin precios). Lo usa el build de la web |
 | `GET /admin/me` | Admin con 2FA | Perfil del administrador autenticado |
+
+### Endpoints del panel (Bloque D; todos exigen administrador con 2FA y quedan auditados)
+
+| Método y ruta | Descripción |
+|---|---|
+| `GET /admin/content` | Borrador: secciones, secciones faltantes, niveles, FAQ, testimonios, tipos |
+| `PUT /admin/content/sections/:section` | Guarda una sección `{ value }`, validada con `content-schema.ts` |
+| `PUT /admin/content/service-levels/:level` | Nombre, descripción e ítems de un nivel |
+| `POST/PUT/DELETE /admin/content/faq[/:id]` | Preguntas frecuentes |
+| `POST/PUT/DELETE /admin/content/testimonials[/:id]` | Testimonios (fecha de autorización obligatoria, no futura) |
+| `GET /admin/pricing` | Perfiles, viático, parámetros y cantidad configurada (de 15) |
+| `PUT/DELETE /admin/pricing/profiles/:code/:level` | Perfil de cálculo (validado con el motor real) |
+| `PUT /admin/pricing/travel` | Base (dentro de Uruguay), radio, factor (1–3), costo por km; solo `POR_KM` |
+| `PUT /admin/pricing/params/:key` | Parámetros de una lista cerrada (`TERRITORY_TOLERANCE_KM`, 0–20) |
+| `POST /admin/pricing/test-simulation` | Simulación con el borrador (no se guarda, no llega al público) |
+| `GET /admin/publications` | Historial (50 más recientes) |
+| `POST /admin/publications` | Publicar (422 si faltan secciones) y disparar el deploy hook |
+| `POST /admin/publications/:id/restore` | Vuelve a publicar una versión anterior como publicación nueva |
+| `GET /admin/leads?status=&page=` | Consultas (50 por página) |
+| `PATCH /admin/leads/:id/status` | `NUEVA`, `CONTACTADA` o `CERRADA` |
+| `GET /admin/leads/export.csv?status=` | CSV con BOM y protegido contra inyección de fórmulas (se audita) |
+| `GET /admin/audit?page=` | Registro de cambios con antes/después |
 
 Respuestas de `POST /public/leads`: 201 `{ ok: true }`; 400 datos inválidos o sin consentimiento;
 403 anti-spam no superado (no se guarda nada); 429 demasiados envíos.
@@ -165,6 +192,50 @@ La prueba verifica 9 puntos:
 8. En móvil no hay desplazamiento horizontal.
 9. El menú móvil es accesible.
 
+## 4 ter. Panel de administración (`/admin/`)
+
+Ver [ADR-013](adr/ADR-013-panel-admin.md). Pestañas: **Contenidos**, **Precios y viáticos**,
+**Consultas**, **Publicar** y **Registro de cambios**.
+
+- **Flujo de trabajo:**
+  1. Editar en borrador.
+  2. Probar los precios con la *simulación de prueba*.
+  3. **Publicar**. El cotizador cambia al instante y la landing cuando termina el build de Vercel.
+- **Restaurar:** vuelve a publicar una versión anterior; el historial nunca se borra.
+- **Revocar el acceso de un administrador:** se desactiva, no se borra
+  ([ADR-012](adr/ADR-012-administradores-se-desactivan.md)):
+  ```sql
+  UPDATE admin_profile SET disabled_at = now() WHERE email = 'persona@dominio';
+  ```
+- **Dar de alta un administrador:**
+  1. Crear el usuario en Supabase Auth.
+  2. Insertar su fila:
+     ```sql
+     INSERT INTO admin_profile (id, email, full_name) VALUES ('<id de auth.users>', '<email>', '<nombre>');
+     ```
+  3. En su primer ingreso, el panel le pide dar de alta el segundo factor con un QR.
+
+### Configuración obligatoria del proyecto Supabase (al crear las cuentas, P-16)
+- Auth → MFA: **TOTP habilitado**.
+- Auth → **registro público deshabilitado** (*Allow new users to sign up* desactivado). Aunque un
+  usuario registrado sin `admin_profile` recibe 403, no tiene por qué poder registrarse.
+- Duración de la sesión y del token de acceso: corta (p. ej., 1 h, con renovación). El panel además
+  cierra la sesión tras 15 min de inactividad.
+- Claves de firma asimétricas (ES256/RS256), para que la API pueda verificar con JWKS.
+
+### Prueba e2e del panel
+```bash
+cd apps/web
+FAKE_AUTH_PORT=54321 node e2e/fake-supabase-auth.mjs &      # Auth simulado (SOLO pruebas)
+# API con SUPABASE_URL=http://127.0.0.1:54321 sobre la base e2e (seed + e2e-publication.sql)
+VITE_API_URL=http://127.0.0.1:3000 VITE_SUPABASE_URL=http://127.0.0.1:54321 VITE_SUPABASE_ANON_KEY=anon-e2e \
+  VITE_SITE_URL=http://127.0.0.1:4173 VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA npm run build
+npm run preview &
+node e2e/admin.e2e.mjs      # 15 pasos: login, 2FA, contenidos, precios, viáticos, simulación, publicar…
+```
+El servidor de Auth simulado guarda en memoria el factor verificado: reinícialo para repetir la prueba
+desde el alta del segundo factor.
+
 ## 5. Motor de cálculo (`packages/pricing`)
 
 Fórmula de la sección 4.3 del plan, validada con los 3 casos de la hoja CARTERA:
@@ -191,7 +262,7 @@ Regla clave: **se redondea solo al presentar**. Si se redondea antes, la Chacra 
 ## 6. Publicación (borrador → publicado)
 
 El administrador edita en tablas de borrador (`calc_profile`, `travel_config`, `content_block`…).
-Al pulsar **Publicar** (Bloque D) se guarda en `publication.snapshot` una copia inmutable. El
+Al pulsar **Publicar** se guarda en `publication.snapshot` una copia inmutable. El
 cotizador público solo lee la **última publicación**. Formato de la parte de precios
 (`src/simulation/pricing-snapshot.ts`):
 

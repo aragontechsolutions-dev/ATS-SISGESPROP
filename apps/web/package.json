@@ -6,7 +6,7 @@
   "description": "PRIVAT – Landing pública prerenderizada (y, en el Bloque D, panel /admin)",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -p tsconfig.json --noEmit && vite build --outDir dist/client && vite build --ssr src/entry-server.tsx --outDir dist/server && node scripts/prerender.mjs",
+    "build": "node scripts/fetch-content.mjs && tsc -p tsconfig.json --noEmit && vite build --outDir dist/client && vite build --ssr src/entry-server.tsx --outDir dist/server && node scripts/prerender.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "preview": "vite preview --outDir dist/client --host 127.0.0.1"
   },

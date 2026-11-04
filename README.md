@@ -15,7 +15,7 @@ cobertura, cotizador y panel admin), según el documento *Plan de desarrollo –
 | A. Base técnica: monorepo, API NestJS, seguridad, modelo de datos | 1–3 | ✅ Código y pruebas listos. Falta crear las cuentas del cliente (Supabase, Render, Vercel: P-16) |
 | B. Motor de cálculo + viático (**Hito 1**) | 4 | ✅ Reproduce al centavo los 3 casos de la planilla |
 | C. Landing, mapa, cotizador y formulario (**Hito 2**) | 5–9 | ✅ Con contenido provisorio. Falta el proveedor de email y el contenido del cliente |
-| D. Panel admin | 10–13 | ⏳ Pendiente |
+| D. Panel admin (**Hito 3**) | 10–13 | ✅ API + panel con 2FA, publicar/restaurar, consultas y auditoría. ⏳ Falta la subida de imágenes (D4) |
 | E. Calidad y entrega | 14–15 | ⏳ Pendiente |
 
 ## Estructura

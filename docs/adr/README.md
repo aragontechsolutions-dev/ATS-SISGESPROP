@@ -15,3 +15,6 @@ Cada decisión técnica relevante se registra con su contexto, la decisión y su
 | [ADR-009](ADR-009-formulario-turnstile-consentimiento.md) | Formulario: Turnstile en el servidor, consentimiento y aviso desacoplado | Aceptada |
 | [ADR-010](ADR-010-contraste-wcag-vs-especificacion.md) | Contraste WCAG 2.2 AA frente a la especificación visual | Pendiente de aprobación del cliente |
 | [ADR-011](ADR-011-prerender-vite-ssr.md) | Prerender de la landing con el SSR nativo de Vite | Aceptada |
+| [ADR-012](ADR-012-administradores-se-desactivan.md) | Los administradores se desactivan, no se borran | Aceptada (actualiza ADR-004) |
+| [ADR-013](ADR-013-panel-admin.md) | Panel: página aparte, sessionStorage, 2FA, validación en el servidor | Aceptada |
+| [ADR-014](ADR-014-contenido-publicado-en-el-build.md) | La landing se genera con el contenido publicado | Aceptada |

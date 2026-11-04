@@ -1,9 +1,11 @@
 /**
  * Contenido de la landing.
  *
- * ESTADO: PROVISORIO (salvo el nombre de la empresa, PRIVAT, confirmado). Textos tomados del "Documento Maestro" del cliente (secciones 3.A a 3.F).
- * En el Bloque D este archivo se reemplaza por el contenido publicado desde el panel
- * (PUBLICATION.snapshot), sin cambiar los componentes.
+ * Origen (Bloque D3):
+ *  1. Contenido PUBLICADO desde el panel: scripts/fetch-content.mjs lo descarga de la API
+ *     (GET /public/content) antes del build en src/generated/published-content.json.
+ *  2. Si no hay publicación (desarrollo / CI), FALLBACK_CONTENT: contenido provisorio del
+ *     "Documento Maestro" con el nombre PRIVAT confirmado. En producción el build exige (1).
  *
  * Regla: lo que el cliente no entregó queda vacío/oculto, nunca inventado:
  *  - FAQ y testimonios: vacíos -> la sección no se muestra (P-13c).
@@ -52,7 +54,7 @@ export interface SiteContent {
 }
 
 /** Tipos de propiedad (hoja TARIFARIO). Mismos códigos que property_type en la base. */
-export const PROPERTY_TYPES: PropertyTypeOption[] = [
+const BASE_PROPERTY_TYPES: PropertyTypeOption[] = [
   { code: 'APTO_TORRE', name: 'Apartamento en torre', segment: 'Apartamento' },
   { code: 'CASA_150_300', name: 'Casa 150-300 m² con piscina', segment: 'Casa' },
   { code: 'CASA_PREMIUM', name: 'Casa premium 400-700 m²', segment: 'Casa' },
@@ -60,7 +62,7 @@ export const PROPERTY_TYPES: PropertyTypeOption[] = [
   { code: 'CHACRA_PRODUCTIVA', name: 'Chacra productiva o múltiples padrones', segment: 'Chacra' },
 ];
 
-export const content: SiteContent = {
+const FALLBACK_CONTENT: SiteContent = {
   provisional: true,
   /** Nombre confirmado por el cliente (P-1). Logo y dominio: pendientes. */
   brand: { name: 'PRIVAT' },
@@ -164,3 +166,68 @@ export const content: SiteContent = {
   footer: { legal: null, privacyPolicyUrl: null, termsUrl: null },
   privacyPolicyVersion: 'provisoria-0',
 };
+
+// ---------------------------------------------------------------------------
+// Contenido publicado (si existe). import.meta.glob devuelve {} si el archivo no
+// existe, así el build y el chequeo de tipos funcionan sin la API.
+// ---------------------------------------------------------------------------
+
+interface PublishedContent {
+  sections: {
+    settings: { provisional: boolean; clientAccess: SiteContent['clientAccess']; privacyPolicyVersion: string };
+    brand: SiteContent['brand'];
+    seo: SiteContent['seo'];
+    nav: { items: SiteContent['nav'] };
+    hero: SiteContent['hero'];
+    services: { eyebrow: string; title: string; intro: string };
+    transparency: SiteContent['transparency'];
+    coverage: SiteContent['coverage'];
+    quoter: SiteContent['quoter'];
+    contact: SiteContent['contact'];
+    footer: SiteContent['footer'];
+  };
+  services: Array<{ level: number; name: string; description: string; items: string[] }>;
+  faq: SiteContent['faq'];
+  testimonials: SiteContent['testimonials'];
+  propertyTypes: Array<{ code: string; name: string }>;
+}
+
+const generated = import.meta.glob<{ content: PublishedContent }>('./generated/published-content.json', {
+  eager: true,
+  import: 'default',
+});
+const published = Object.values(generated)[0]?.content;
+
+function fromPublished(p: PublishedContent): SiteContent {
+  const s = p.sections;
+  return {
+    provisional: s.settings.provisional,
+    clientAccess: s.settings.clientAccess,
+    privacyPolicyVersion: s.settings.privacyPolicyVersion,
+    brand: s.brand,
+    seo: s.seo,
+    nav: s.nav.items,
+    hero: s.hero,
+    services: {
+      ...s.services,
+      levels: p.services
+        .filter((l): l is typeof l & { level: 1 | 2 | 3 } => l.level >= 1 && l.level <= 3)
+        .map((l) => ({ level: l.level, name: l.name, description: l.description, items: l.items })),
+    },
+    transparency: s.transparency,
+    coverage: s.coverage,
+    quoter: s.quoter,
+    contact: s.contact,
+    footer: s.footer,
+    faq: p.faq,
+    testimonials: p.testimonials,
+  };
+}
+
+export const content: SiteContent = published ? fromPublished(published) : FALLBACK_CONTENT;
+
+/** Nombres publicados de los tipos de propiedad (el segmento del formulario es fijo por código). */
+export const PROPERTY_TYPES: PropertyTypeOption[] = BASE_PROPERTY_TYPES.map((t) => ({
+  ...t,
+  name: published?.propertyTypes.find((p) => p.code === t.code)?.name ?? t.name,
+}));

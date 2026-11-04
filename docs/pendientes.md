@@ -41,6 +41,14 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 - **Marca sin logo:** "PRIVAT" se muestra como texto con espaciado amplio y el favicon es genérico hasta recibir el logo vectorial.
 - **Hero:** fondo verde con líneas arquitectónicas en SVG hasta tener la fotografía (P-13b).
 
+## Pendiente técnico del Bloque D
+
+- **D4 – Imágenes** (hero escritorio/móvil y servicios): subida con URL firmada de Supabase Storage,
+  solo JPG/PNG/WebP, tamaño máximo y sin metadatos (tabla `media_asset`, ya creada). Depende de
+  Supabase Storage (P-16) y de las fotos (P-13b).
+- **Panel contra Supabase real:** probado con un servidor de Auth simulado. Hay que repetir la prueba con
+  el proyecto real del cliente.
+
 ## Dudas técnicas abiertas (NO SÉ todavía)
 
 - **Claves de prueba secretas de Cloudflare Turnstile:** no se pudieron verificar (documentación

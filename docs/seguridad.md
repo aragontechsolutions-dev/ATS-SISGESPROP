@@ -3,7 +3,7 @@
 Regla base: **el navegador nunca accede a la base de datos**. Todo pasa por la API.
 Cada control lleva su verificación automática (archivo de prueba entre paréntesis).
 
-## 1. Controles implementados (bloques A, B y C)
+## 1. Controles implementados (bloques A, B, C y D)
 
 | Funcionalidad | Riesgo | Control | Verificación |
 |---|---|---|---|
@@ -30,6 +30,14 @@ Cada control lleva su verificación automática (archivo de prueba entre parént
 | Web (navegador) | Clickjacking, sniffing, permisos | `vercel.json`: `frame-ancestors 'none'`, `X-Frame-Options DENY`, HSTS, nosniff, Referrer-Policy y Permissions-Policy (sin cámara, micrófono, geolocalización ni pagos) | revisión al desplegar |
 | Web (navegador) | Secretos en el frontend | Solo variables `VITE_*` públicas; la clave secreta de Turnstile vive solo en la API | revisión de código |
 | Contenido | Publicar textos no aprobados | Banner "Contenido provisorio" y `noindex, nofollow` mientras el contenido sea provisorio; sello de RC oculto sin póliza (P-15) | e2e › *banner…* |
+| Panel: contenidos | Datos arbitrarios / XSS almacenado | Esquema por sección (solo campos conocidos, tipos y longitudes máximas, sin caracteres de control); URLs solo `https`; menú solo con anclas propias; React escapa todo el texto | `admin.test.ts` › *contenidos* |
+| Panel: precios | Parámetros que rompen el cotizador | Decimales con formato estricto; cada perfil se valida con el motor real; base de operaciones dentro de Uruguay; factor de ruta entre 1 y 3; parámetros en lista cerrada | `admin.test.ts` › *precios y viáticos* |
+| Panel: publicar | Error de tipeo en producción | Borrador → simulación de prueba → publicar; 422 si falta contenido; restaurar sin borrar historial | *publicar y restaurar*; e2e del panel |
+| Panel: auditoría | Cambios sin rastro | `audit_log` con antes/después en la **misma transacción**; administradores desactivables, no borrables ([ADR-012](adr/ADR-012-administradores-se-desactivan.md)) | *guarda una sección… y la audita*; *un administrador con historial no se puede borrar* |
+| Panel: consultas | Fuga de datos personales; inyección de fórmulas en Excel | Solo con 2FA; exportación auditada; celdas `= + - @` neutralizadas con apóstrofo; descarga sin token en la URL | *CSV: neutraliza fórmulas…* |
+| Panel: sesión | Robo de sesión, equipo desatendido | `sessionStorage` (se borra al cerrar la pestaña), cierre por inactividad (15 min), 401 → cierra sesión; administrador desactivado → 403 | e2e del panel; *403 si el administrador está desactivado* |
+| Panel: aislamiento | Exposición del código del panel | Página aparte con bundle propio (la landing no lo descarga), CSP propia, `noindex`, `no-store` | verificación del build |
+| Build de la web | Publicar contenido provisorio por error | `REQUIRE_PUBLISHED_CONTENT=true` detiene el build si no se lee el contenido publicado | verificado (código de salida 1) |
 | Errores | Fuga de información | Mensajes genéricos en autenticación; `/health` no expone versión ni entorno; mensajes de validación desactivados en producción | revisión de código |
 
 ## 2. "Octubre Negro" (octubre 2026): estado en este repositorio
@@ -63,7 +71,9 @@ Cada control lleva su verificación automática (archivo de prueba entre parént
 
 ## 4. Pendiente para bloques siguientes
 
-- Exportación CSV de consultas (Bloque D): neutralizar celdas que empiecen con `=`, `+`, `-` o `@` (inyección de fórmulas en Excel).
+- Subida de imágenes con URL firmada de un solo uso (Bloque D4, pendiente).
+- Configuración del proyecto Supabase: MFA TOTP, registro público deshabilitado y duración de sesión
+  (ver guía técnica, "Configuración obligatoria del proyecto Supabase").
 - Prueba e2e en el CI (requiere instalar navegadores en el workflow) y escaneo de accesibilidad automatizado (Bloque E).
 - Subida de imágenes: URL firmada de un solo uso, solo JPG/PNG/WebP, tamaño máximo, sin metadatos (Bloque D).
 - Cierre de sesión por inactividad en el panel (Bloque D).

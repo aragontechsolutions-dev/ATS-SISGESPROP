@@ -10,7 +10,7 @@ segundo factor.
 - El rol se lee de `admin_profile` por `sub`; nunca del token ni de `user_metadata`.
 - Guard global deny-by-default: solo las rutas con `@Public()` quedan abiertas.
 
-**Consecuencias.** Revocar un acceso es borrar la fila de `admin_profile` (efecto inmediato). Requiere
+**Consecuencias.** ~~Revocar un acceso es borrar la fila de `admin_profile`.~~ Actualizado por [ADR-012](ADR-012-administradores-se-desactivan.md): se revoca completando `disabled_at` (efecto inmediato). Requiere
 habilitar MFA TOTP en el proyecto Supabase. Supuesto a verificar al crear el proyecto: que el proyecto
 emita tokens con claves asimétricas (por defecto en proyectos creados después del 01/05/2025, según la
 investigación).
