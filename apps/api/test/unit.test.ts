@@ -5,6 +5,7 @@ import { hashIp } from '../src/common/ip-hash.ts';
 import { parsePricingSnapshot } from '../src/simulation/pricing-snapshot.ts';
 import { isWithinTerritory } from '@ats/pricing';
 import { DEFAULT_TERRITORY_TOLERANCE_KM, URUGUAY_GEOMETRY } from '../src/geo/uruguay.ts';
+import { TurnstileVerifier } from '../src/leads/turnstile.verifier.ts';
 
 const baseEnv = {
   NODE_ENV: 'production',
@@ -12,6 +13,8 @@ const baseEnv = {
   SUPABASE_URL: 'https://p.supabase.co',
   CORS_ORIGINS: 'https://www.cliente.com.uy',
   IP_HASH_SECRET: 'x'.repeat(32),
+  TURNSTILE_SECRET_KEY: 'secret',
+  TURNSTILE_ALLOWED_HOSTNAMES: 'www.cliente.com.uy, cliente.com.uy',
 };
 
 describe('loadConfig', () => {
@@ -29,6 +32,11 @@ describe('loadConfig', () => {
   });
   it('rechaza orígenes CORS con ruta o barra final', () => {
     assert.throws(() => loadConfig({ ...baseEnv, CORS_ORIGINS: 'https://www.cliente.com.uy/' }), /origen exacto/);
+  });
+  it('exige la clave secreta de Turnstile y dominios permitidos en producción', () => {
+    assert.throws(() => loadConfig({ ...baseEnv, TURNSTILE_SECRET_KEY: '' }), /TURNSTILE_SECRET_KEY/);
+    assert.throws(() => loadConfig({ ...baseEnv, TURNSTILE_ALLOWED_HOSTNAMES: '' }), /TURNSTILE_ALLOWED_HOSTNAMES/);
+    assert.deepEqual(loadConfig(baseEnv).turnstileAllowedHostnames, ['www.cliente.com.uy', 'cliente.com.uy']);
   });
   it('exige un secreto de hash de IP largo', () => {
     assert.throws(() => loadConfig({ ...baseEnv, IP_HASH_SECRET: 'corto' }), /32/);
@@ -85,4 +93,42 @@ describe('contorno de Uruguay (datos reales)', () => {
   for (const [name, [lat, lng]] of Object.entries(outside)) {
     it(`rechaza ${name}`, () => assert.equal(isWithinTerritory({ lat, lng }, URUGUAY_GEOMETRY, tol), false));
   }
+});
+
+describe('TurnstileVerifier (verificación en el servidor)', () => {
+  type Call = { url: string; body: FormData };
+  function fakeFetch(response: () => Promise<Response>) {
+    const calls: Call[] = [];
+    const fn = (async (url: string, init: RequestInit) => {
+      calls.push({ url, body: init.body as FormData });
+      return response();
+    }) as unknown as typeof fetch;
+    return { fn, calls };
+  }
+  const json = (body: unknown, status = 200) => async () => new Response(JSON.stringify(body), { status });
+
+  it('envía secret, response y remoteip a siteverify y acepta success=true', async () => {
+    const f = fakeFetch(json({ success: true, hostname: 'www.cliente.com.uy' }));
+    const v = new TurnstileVerifier('s3cr3t', ['www.cliente.com.uy'], f.fn);
+    assert.equal(await v.verify('tok', '1.2.3.4'), true);
+    assert.equal(f.calls[0]?.url, 'https://challenges.cloudflare.com/turnstile/v0/siteverify');
+    assert.equal(f.calls[0]?.body.get('secret'), 's3cr3t');
+    assert.equal(f.calls[0]?.body.get('response'), 'tok');
+    assert.equal(f.calls[0]?.body.get('remoteip'), '1.2.3.4');
+  });
+  it('rechaza success=false', async () => {
+    const v = new TurnstileVerifier('s', [], fakeFetch(json({ success: false, 'error-codes': ['invalid-input-response'] })).fn);
+    assert.equal(await v.verify('tok', undefined), false);
+  });
+  it('rechaza un token emitido para otro dominio', async () => {
+    const v = new TurnstileVerifier('s', ['www.cliente.com.uy'], fakeFetch(json({ success: true, hostname: 'evil.example' })).fn);
+    assert.equal(await v.verify('tok', undefined), false);
+  });
+  it('falla cerrado ante error HTTP o de red', async () => {
+    assert.equal(await new TurnstileVerifier('s', [], fakeFetch(json({}, 500)).fn).verify('t', undefined), false);
+    const broken = fakeFetch(async () => {
+      throw new Error('red caída');
+    });
+    assert.equal(await new TurnstileVerifier('s', [], broken.fn).verify('t', undefined), false);
+  });
 });

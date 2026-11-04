@@ -10,7 +10,7 @@ cobertura, cotizador y panel admin), según el documento *Plan de desarrollo –
 |---|---|---|
 | A. Base técnica: monorepo, API NestJS, seguridad, modelo de datos | 1–3 | ✅ Código y pruebas listos. Falta crear las cuentas del cliente (Supabase, Render, Vercel: P-16) |
 | B. Motor de cálculo + viático (**Hito 1**) | 4 | ✅ Reproduce al centavo los 3 casos de la planilla |
-| C. Landing y cotizador (web) | 5–9 | ⏳ Pendiente |
+| C. Landing, mapa, cotizador y formulario (**Hito 2**) | 5–9 | ✅ Con contenido provisorio. Falta el proveedor de email y el contenido del cliente |
 | D. Panel admin | 10–13 | ⏳ Pendiente |
 | E. Calidad y entrega | 14–15 | ⏳ Pendiente |
 
@@ -22,7 +22,7 @@ apps/api           API NestJS 12 + Prisma 7 (PostgreSQL / Supabase)
   prisma/          Esquema (17 tablas), migraciones (incluye seguridad RLS) y seed
   src/             Código de la API
   test/            Pruebas unitarias, de integración y de seguridad
-apps/web           (Bloque C) Landing + panel en React + Vite + Tailwind
+apps/web           Landing prerenderizada (React 19 + Vite 8 + Tailwind 4); panel /admin en el Bloque D
 docs/              Guía técnica, seguridad, decisiones (ADR), pendientes y bitácora
 ```
 

@@ -7,6 +7,17 @@ import { configureApp } from '../src/bootstrap.ts';
 import { APP_CONFIG, type AppConfig } from '../src/config/app-config.ts';
 import { TOKEN_VERIFIER, TokenVerifier } from '../src/auth/token-verifier.ts';
 import { PrismaService } from '../src/prisma/prisma.service.ts';
+import { CAPTCHA_VERIFIER, type CaptchaVerifier } from '../src/leads/turnstile.verifier.ts';
+import { LEAD_NOTIFIER, type LeadNotifier, type NewLeadNotice } from '../src/leads/lead-notifier.ts';
+
+/** Anti-spam simulado: solo el token "ok" es válido. */
+export const fakeCaptcha: CaptchaVerifier = { verify: async (token) => token === 'ok' };
+
+/** Notificador simulado que registra los avisos para poder comprobarlos. */
+export function recordingNotifier(): LeadNotifier & { notices: NewLeadNotice[] } {
+  const notices: NewLeadNotice[] = [];
+  return { notices, notifyNewLead: async (n) => void notices.push(n) };
+}
 
 /** Base de datos de pruebas. Sin esta variable, las pruebas de integración se omiten. */
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
@@ -22,6 +33,8 @@ export function testConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     corsOrigins: ['http://localhost:5173'],
     ipHashSecret: 'test-secret-test-secret-test-secret-123',
     trustProxyHops: 0,
+    turnstileSecretKey: 'test-turnstile-secret',
+    turnstileAllowedHostnames: [],
     ...overrides,
   };
 }
@@ -49,12 +62,20 @@ export async function signToken(
     .sign(privateKey);
 }
 
-export async function createApp(verifier: TokenVerifier, config = testConfig()) {
+export async function createApp(
+  verifier: TokenVerifier,
+  config = testConfig(),
+  notifier: LeadNotifier = recordingNotifier(),
+) {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(APP_CONFIG)
     .useValue(config)
     .overrideProvider(TOKEN_VERIFIER)
     .useValue(verifier)
+    .overrideProvider(CAPTCHA_VERIFIER)
+    .useValue(fakeCaptcha)
+    .overrideProvider(LEAD_NOTIFIER)
+    .useValue(notifier)
     .compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({ bodyParser: false, logger: false });
   configureApp(app, config);

@@ -67,6 +67,17 @@ Ver `apps/api/.env.example`. La API **no arranca** si falta una variable crític
 | `CORS_ORIGINS` | Orígenes exactos permitidos, separados por coma. En producción solo `https` |
 | `IP_HASH_SECRET` | Secreto (≥ 32 caracteres) del HMAC de IPs |
 | `TRUST_PROXY_HOPS` | Proxies de confianza delante de la API (Render: valor inicial 1, **a verificar** en el despliegue) |
+| `TURNSTILE_SECRET_KEY` | Clave **secreta** de Cloudflare Turnstile (solo en Render) |
+| `TURNSTILE_ALLOWED_HOSTNAMES` | Dominios del sitio aceptados en el token (obligatorio en producción) |
+
+### 3.4 bis Variables de la web (`apps/web/.env.example`)
+Son **públicas** (quedan dentro del JavaScript): nunca poner secretos.
+
+| Variable | Uso |
+|---|---|
+| `VITE_API_URL` | URL de la API. Obligatoria: también se usa para generar la CSP (`connect-src`) |
+| `VITE_TURNSTILE_SITE_KEY` | Clave **de sitio** (pública) de Turnstile |
+| `VITE_SITE_URL` | URL pública del sitio (canonical, sitemap). Sin ella no se generan |
 
 ### 3.5 Pruebas
 ```bash
@@ -84,13 +95,19 @@ cd apps/api && npm run build && npm start   # con las variables de entorno carga
 curl localhost:3000/health
 ```
 
-## 4. Endpoints (Etapa 1, bloques A y B)
+## 4. Endpoints (Etapa 1, bloques A, B y C)
 
 | Método y ruta | Acceso | Descripción |
 |---|---|---|
 | `GET /health` | Público | `{"status":"ok"}` si la base responde; 503 si no |
+| `GET /public/coverage` | Público | Base de operaciones publicada `{ baseLabel, baseLat, baseLng }` (503 sin publicación) |
+| `POST /public/travel-estimate` | Público, 20/min por IP | Entrada `lat`, `lng`. Devuelve `distanceKm`, `billableKm`, `travelCostPerVisit` (no guarda nada) |
 | `POST /public/simulations` | Público, 10/min por IP | Cotización. Entrada: `propertyTypeCode`, `serviceLevel` (1–3), `lat`, `lng` |
+| `POST /public/leads` | Público, 5/min por IP + Turnstile | Formulario de diagnóstico. Ver ADR-009 |
 | `GET /admin/me` | Admin con 2FA | Perfil del administrador autenticado |
+
+Respuestas de `POST /public/leads`: 201 `{ ok: true }`; 400 datos inválidos o sin consentimiento;
+403 anti-spam no superado (no se guarda nada); 429 demasiados envíos.
 
 Respuestas de `POST /public/simulations`:
 
@@ -102,6 +119,51 @@ Respuestas de `POST /public/simulations`:
 | 422 | Ubicación fuera de Uruguay |
 | 429 | Demasiadas simulaciones |
 | 503 | El cotizador todavía no tiene una publicación con parámetros |
+
+## 4 bis. Web (`apps/web`)
+
+- React 19 + Vite 8 + Tailwind 4. Colores solo desde los tokens de `src/styles.css`
+  (especificación de identidad, sección 8).
+- **Contenido:** `src/content.ts`, provisorio y tomado del Documento Maestro. Lo que el cliente no
+  entregó queda oculto: FAQ, testimonios, datos de contacto y legales, y el sello de seguro de RC.
+  Un banner indica "Contenido provisorio" y la página lleva `noindex`.
+- **Prerender** ([ADR-011](adr/ADR-011-prerender-vite-ssr.md)): `npm run build -w @ats/web` genera
+  `dist/client` con el HTML completo, SEO, CSP y `sitemap.xml`.
+- **Carga diferida:** el mapa (Leaflet + OSM) se descarga al acercarse a la sección "Cobertura" y
+  Turnstile al interactuar con el formulario.
+- **Flujo:** mapa (punto, distancia y viático por visita) → cotizador (tipo, nivel y ubicación →
+  baja, alta y anual) → "Congela esta tarifa" → formulario con tipo y simulación precargados.
+- **Desarrollo:** `npm run dev -w @ats/web` (escucha solo en 127.0.0.1; nunca exponer el servidor de
+  desarrollo de Vite).
+
+### Prueba e2e (navegador real)
+Requiere Playwright con Chromium, la API corriendo con datos de prueba y la web servida:
+```bash
+# 1. Base de prueba con la publicación ficticia (NUNCA en producción)
+cd apps/api
+npx prisma migrate deploy && npm run db:seed
+npx prisma db execute --file test/fixtures/e2e-publication.sql
+npm run build && npm start      # con CORS_ORIGINS=http://127.0.0.1:4173 y el resto de variables
+
+# 2. Web
+cd apps/web
+VITE_API_URL=http://127.0.0.1:3000 VITE_SITE_URL=http://127.0.0.1:4173 \
+  VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA npm run build
+npm run preview
+
+# 3. Prueba (PLAYWRIGHT_MODULE si Playwright está instalado de forma global)
+node e2e/smoke.e2e.mjs
+```
+La prueba verifica 9 puntos:
+1. El HTML viene prerenderizado.
+2. El mapa y Turnstile no se cargan al inicio.
+3. El mapa estima distancia y viático.
+4. El cotizador muestra lo que devuelve la API.
+5. Se informa cuando no hay tarifa publicada.
+6. La API rechaza un token anti-spam no válido.
+7. No hay errores de consola (incluye violaciones de CSP).
+8. En móvil no hay desplazamiento horizontal.
+9. El menú móvil es accesible.
 
 ## 5. Motor de cálculo (`packages/pricing`)
 
@@ -171,6 +233,13 @@ motor, migraciones contra PostgreSQL 16 efímero, pruebas de la API y build. Ver
 
 ## 9. Despliegue (pendiente: cuentas del cliente, P-16)
 
+**Web en Vercel:** proyecto con raíz `apps/web`. `vercel.json` define el comando de build, la carpeta
+`dist/client` y las cabeceras (HSTS, `frame-ancestors 'none'`, nosniff, Referrer-Policy y
+Permissions-Policy). Variables: `VITE_API_URL`, `VITE_SITE_URL` y `VITE_TURNSTILE_SITE_KEY`.
+Que el `buildCommand` (`cd ../.. && npm ci …`) funcione con la raíz en `apps/web` está **a verificar
+en el primer despliegue**.
+
+
 Pasos previstos cuando existan las cuentas:
 1. Supabase: crear proyecto (región cercana a Render Virginia), activar MFA TOTP en Auth.
 2. Ejecutar `npm run db:migrate` y `npm run db:seed` con `DIRECT_URL` desde un entorno protegido.
@@ -179,3 +248,5 @@ Pasos previstos cuando existan las cuentas:
    - Start: `npm start -w @ats/api`
    - Health check: `/health`
 4. Crear el usuario admin en Supabase Auth e insertar su fila en `admin_profile`.
+5. Cloudflare Turnstile: crear el widget para el dominio. La clave de sitio va en Vercel y la secreta en
+   Render (`TURNSTILE_SECRET_KEY`, `TURNSTILE_ALLOWED_HOSTNAMES`).

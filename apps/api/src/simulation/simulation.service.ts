@@ -1,16 +1,9 @@
-import {
-  Inject,
-  Injectable,
-  NotFoundException,
-  ServiceUnavailableException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
-import { computeFee, computeTravel, isWithinTerritory } from '@ats/pricing';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { computeFee } from '@ats/pricing';
 import { APP_CONFIG, type AppConfig } from '../config/app-config.ts';
 import { PrismaService } from '../prisma/prisma.service.ts';
 import { hashIp } from '../common/ip-hash.ts';
-import { DEFAULT_TERRITORY_TOLERANCE_KM, URUGUAY_GEOMETRY } from '../geo/uruguay.ts';
-import { parsePricingSnapshot } from './pricing-snapshot.ts';
+import { PublicationService, travelFor } from '../publication/publication.service.ts';
 import type { SimulateDto } from './simulate.dto.ts';
 
 /** Respuesta pública: solo totales, distancia y viático. Nunca valor hora ni prima. */
@@ -29,15 +22,12 @@ export interface SimulationResponse {
 export class SimulationService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly publications: PublicationService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
   async simulate(dto: SimulateDto, ip: string | undefined): Promise<SimulationResponse> {
-    const publication = await this.prisma.publication.findFirst({ orderBy: { publishedAt: 'desc' } });
-    const pricing = publication ? parsePricingSnapshot(publication.snapshot) : null;
-    if (!publication || !pricing) {
-      throw new ServiceUnavailableException('El cotizador aún no está configurado');
-    }
+    const { publicationId, pricing } = await this.publications.getPricing();
 
     const propertyType = await this.prisma.propertyType.findUnique({ where: { code: dto.propertyTypeCode } });
     const profile = pricing.profiles.find(
@@ -48,26 +38,8 @@ export class SimulationService {
     }
 
     const point = { lat: dto.lat, lng: dto.lng };
-    const tolerance = Number(pricing.params.TERRITORY_TOLERANCE_KM ?? DEFAULT_TERRITORY_TOLERANCE_KM);
-    if (!isWithinTerritory(point, URUGUAY_GEOMETRY, tolerance)) {
-      throw new UnprocessableEntityException('La ubicación está fuera de Uruguay');
-    }
-
-    const t = pricing.travel;
-    if (t.mode !== 'POR_KM') {
-      throw new ServiceUnavailableException('El cálculo de viático por tramos aún no está disponible');
-    }
-    const travel = computeTravel(
-      {
-        base: { lat: t.baseLat, lng: t.baseLng },
-        freeRadiusKm: t.freeRadiusKm,
-        routeFactor: t.routeFactor,
-        costPerKm: t.costPerKm,
-        mode: t.mode,
-      },
-      point,
-    );
-    const fee = computeFee({ profile, billableKm: travel.billableKm, costPerKm: t.costPerKm });
+    const { travel, toleranceKm } = travelFor(pricing, point);
+    const fee = computeFee({ profile, billableKm: travel.billableKm, costPerKm: pricing.travel.costPerKm });
 
     const simulation = await this.prisma.simulation.create({
       data: {
@@ -82,10 +54,10 @@ export class SimulationService {
         annualFee: fee.annualFee,
         // Todo lo necesario para reproducir el cálculo si el cliente lo reclama.
         inputsSnapshot: {
-          publicationId: publication.id,
+          publicationId,
           profile: { ...profile },
-          travelConfig: { ...t },
-          territoryToleranceKm: tolerance,
+          travelConfig: { ...pricing.travel },
+          territoryToleranceKm: toleranceKm,
           travel: { ...travel },
           fee: { ...fee.exact },
         },

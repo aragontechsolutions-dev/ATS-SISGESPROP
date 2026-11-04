@@ -10,9 +10,13 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./uruguay.geometry.json": "./data/uruguay.geometry.json"
   },
-  "files": ["dist"],
+  "files": [
+    "dist",
+    "data"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",

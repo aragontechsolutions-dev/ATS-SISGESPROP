@@ -28,7 +28,24 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 | ★ P-15 | Asesor legal: política de privacidad, inscripción URCDP; póliza de RC (el sello no se publica sin ella) | C (formulario) |
 | ★ P-17 | Persona que aprueba vistas previas (48 h) | Todos |
 
+## Decisiones que requieren aprobación del cliente
+
+- **ADR-010:** borde de los campos de formulario en gris cálido (#686B67) en lugar de #E2DED5, para
+  cumplir WCAG 2.2 AA (1,34:1 → 5,4:1).
+- **Textos de la landing:** son provisorios, tomados del Documento Maestro y adaptados por el desarrollo
+  en Transparencia, Cobertura y Contacto. El "límite de gasto" se redactó sin cifra (el documento dice
+  "ej. USD 500").
+- **Proveedor de email transaccional** para el aviso de consultas: hoy solo se registra en el log.
+- **Tipografía:** se usa la del sistema (cero descargas) hasta definir la identidad (P-1).
+- **Hero:** fondo verde con líneas arquitectónicas en SVG hasta tener la fotografía (P-13b).
+
 ## Dudas técnicas abiertas (NO SÉ todavía)
+
+- **Claves de prueba secretas de Cloudflare Turnstile:** no se pudieron verificar (documentación
+  bloqueada en el entorno). Las pruebas automáticas simulan el verificador.
+- **`buildCommand` de Vercel** con raíz `apps/web` en el monorepo: a verificar en el primer despliegue.
+- **Alternativa accesible al mapa:** hoy hay un enlace "Escríbenos". La lista de departamento y
+  localidad depende de la fuente de localidades (ver abajo).
 
 - **Saltos de proxy en Render** (`TRUST_PROXY_HOPS`): valor inicial 1. Hay que confirmarlo en el primer
   despliegue revisando que `req.ip` sea la IP del visitante.

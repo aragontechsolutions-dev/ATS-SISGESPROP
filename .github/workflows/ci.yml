@@ -76,3 +76,15 @@ jobs:
           npm run typecheck
           npm test
           npm run build
+
+      - name: Web – tipos, build y prerender (landing estática con CSP)
+        working-directory: apps/web
+        env:
+          VITE_API_URL: https://api.example.invalid
+          VITE_SITE_URL: https://www.example.invalid
+          VITE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+        run: |
+          npm run typecheck
+          npm run build
+          grep -q '<h1' dist/client/index.html
+          grep -q 'Content-Security-Policy' dist/client/index.html

@@ -12,3 +12,6 @@ Cada decisión técnica relevante se registra con su contexto, la decisión y su
 | [ADR-006](ADR-006-contorno-uruguay-tolerancia.md) | Contorno de Uruguay (Natural Earth) con tolerancia de 2 km | Aceptada |
 | [ADR-007](ADR-007-versiones-y-pruebas.md) | Prisma 7.10.1, NestJS 12 ESM y pruebas con `node --test` | Aceptada |
 | [ADR-008](ADR-008-sin-datos-inventados.md) | Sin datos inventados: lo no confirmado queda bloqueado | Aceptada |
+| [ADR-009](ADR-009-formulario-turnstile-consentimiento.md) | Formulario: Turnstile en el servidor, consentimiento y aviso desacoplado | Aceptada |
+| [ADR-010](ADR-010-contraste-wcag-vs-especificacion.md) | Contraste WCAG 2.2 AA frente a la especificación visual | Pendiente de aprobación del cliente |
+| [ADR-011](ADR-011-prerender-vite-ssr.md) | Prerender de la landing con el SSR nativo de Vite | Aceptada |

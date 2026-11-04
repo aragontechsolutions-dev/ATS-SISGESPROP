@@ -10,6 +10,10 @@ export interface AppConfig {
   corsOrigins: string[];
   ipHashSecret: string;
   trustProxyHops: number;
+  /** Clave secreta de Cloudflare Turnstile (solo en el servidor). */
+  turnstileSecretKey: string;
+  /** Dominios desde los que se acepta un token de Turnstile (vacío = no se valida el hostname). */
+  turnstileAllowedHostnames: string[];
 }
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
@@ -66,6 +70,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error('TRUST_PROXY_HOPS inválido (0 a 5)');
   }
 
+  const turnstileAllowedHostnames = (env.TURNSTILE_ALLOWED_HOSTNAMES ?? '')
+    .split(',')
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean);
+  if (prod && turnstileAllowedHostnames.length === 0) {
+    throw new Error('TURNSTILE_ALLOWED_HOSTNAMES es obligatorio en producción');
+  }
+
   return {
     nodeEnv,
     port,
@@ -74,5 +86,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     corsOrigins,
     ipHashSecret,
     trustProxyHops,
+    turnstileSecretKey: required(env, 'TURNSTILE_SECRET_KEY'),
+    turnstileAllowedHostnames,
   };
 }

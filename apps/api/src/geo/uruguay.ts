@@ -1,5 +1,5 @@
 import type { GeoGeometry } from '@ats/pricing';
-import data from './uruguay.geometry.json' with { type: 'json' };
+import data from '@ats/pricing/uruguay.geometry.json' with { type: 'json' };
 
 /**
  * Contorno de Uruguay. Fuente: Natural Earth 1:10m Admin 0 (dominio público),
