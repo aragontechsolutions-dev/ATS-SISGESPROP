@@ -16,7 +16,7 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 
 | Ref. | Dato | Bloque |
 |---|---|---|
-| ★ P-1 | Nombre comercial, logo vectorial, dominio | C (landing) |
+| ★ P-1 | ~~Nombre comercial~~ → **PRIVAT** (confirmado 04/11/2026). Faltan: logo vectorial y dominio | C (landing) |
 | ★ P-13 / P-13b | Textos de la landing; fotos con derecho de uso (1 hero + 3 servicios) | C |
 | P-13c | Testimonios reales autorizados (si no hay, la sección se oculta) | C |
 | ★ P-14 | Teléfono, WhatsApp, email de consultas, dirección, redes | C |
@@ -27,6 +27,7 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 | P-12 | Botón "Acceso Clientes": ¿oculto o "Próximamente"? | C |
 | ★ P-15 | Asesor legal: política de privacidad, inscripción URCDP; póliza de RC (el sello no se publica sin ella) | C (formulario) |
 | ★ P-17 | Persona que aprueba vistas previas (48 h) | Todos |
+| P-16b | Repositorio GitHub propio de PRIVAT (el cliente lo está creando). Mientras tanto se trabaja en `aragontechsolutions-dev/ATS-SISGESPROP` | Traspaso |
 
 ## Decisiones que requieren aprobación del cliente
 
@@ -36,7 +37,8 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
   en Transparencia, Cobertura y Contacto. El "límite de gasto" se redactó sin cifra (el documento dice
   "ej. USD 500").
 - **Proveedor de email transaccional** para el aviso de consultas: hoy solo se registra en el log.
-- **Tipografía:** se usa la del sistema (cero descargas) hasta definir la identidad (P-1).
+- **Tipografía:** se usa la del sistema (cero descargas) hasta definir la identidad visual del logo (P-1).
+- **Marca sin logo:** "PRIVAT" se muestra como texto con espaciado amplio y el favicon es genérico hasta recibir el logo vectorial.
 - **Hero:** fondo verde con líneas arquitectónicas en SVG hasta tener la fotografía (P-13b).
 
 ## Dudas técnicas abiertas (NO SÉ todavía)

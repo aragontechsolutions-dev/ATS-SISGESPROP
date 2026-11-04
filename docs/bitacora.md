@@ -68,3 +68,17 @@ prerender.
 
 **Siguiente:** Bloque D (panel admin: login con 2FA, contenidos, parámetros, viáticos, consultas,
 publicar).
+
+## 2026-11-04 – Nombre de la empresa: PRIVAT
+
+- El cliente confirmó el nombre comercial **PRIVAT** (P-1). Siguen pendientes el logo y el dominio.
+- Se reemplazó el nombre provisorio en `apps/web/src/content.ts`, la única fuente del nombre: de ahí lo
+  toman el encabezado, el pie, el `<title>` y los datos estructurados.
+- Sin logo, "PRIVAT" se muestra como texto con espaciado amplio y el favicon sigue siendo genérico.
+- Nombre agregado al README y a las descripciones de los paquetes. Los nombres técnicos de los paquetes
+  (`@ats/*`) y del repositorio no cambian: no afectan al cliente y cambiarlos obligaría a tocar todas
+  las importaciones.
+- El cliente todavía no tiene repositorio. Se sigue trabajando en
+  `aragontechsolutions-dev/ATS-SISGESPROP` y se documentó el traspaso en la
+  [guía técnica, sección 10](guia-tecnica.md#10-traspaso-al-repositorio-del-cliente).
+- La prueba e2e ahora verifica que el título y el encabezado muestren PRIVAT.

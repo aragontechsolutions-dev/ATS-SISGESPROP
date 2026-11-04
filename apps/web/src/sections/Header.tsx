@@ -9,7 +9,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 bg-primary text-text-on-dark">
       <div className="container-page flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
-        <a href="#inicio" className="text-lg font-bold tracking-tight whitespace-nowrap" aria-label={`${content.brand.name}, ir al inicio`}>
+        <a href="#inicio" className="text-lg font-bold tracking-[0.2em] whitespace-nowrap" aria-label={`${content.brand.name}, ir al inicio`}>
           {content.brand.name}
         </a>
 

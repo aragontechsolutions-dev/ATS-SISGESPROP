@@ -1,7 +1,7 @@
 {
   "name": "ats-sisgesprop",
   "private": true,
-  "description": "Sistema de gestión de propiedades – Etapa 1: landing, mapa de cobertura, cotizador y panel admin",
+  "description": "PRIVAT – Sistema de gestión de propiedades (Uruguay). Etapa 1: landing, mapa de cobertura, cotizador y panel admin",
   "workspaces": [
     "packages/*",
     "apps/*"

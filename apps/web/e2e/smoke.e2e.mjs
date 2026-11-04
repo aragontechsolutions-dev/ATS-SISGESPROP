@@ -59,6 +59,11 @@ try {
     assert.ok(!requested.some((u) => u.includes('challenges.cloudflare.com')), 'Turnstile se cargó antes de tiempo');
   });
 
+  await step('marca PRIVAT en el título y el encabezado', async () => {
+    assert.match(await page.title(), /\| PRIVAT$/);
+    await page.locator('header').getByRole('link', { name: /PRIVAT/ }).waitFor();
+  });
+
   await step('banner de contenido provisorio y "Acceso clientes" deshabilitado', async () => {
     await page.getByText('Contenido provisorio').waitFor();
     const access = page.locator('header [aria-disabled="true"]').first();

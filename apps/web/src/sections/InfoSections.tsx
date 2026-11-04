@@ -121,7 +121,7 @@ export function Footer() {
     <footer className="bg-primary px-4 py-12 text-text-on-dark sm:px-6">
       <div className="container-page grid gap-8 md:grid-cols-3">
         <div>
-          <p className="text-lg font-bold">{brand.name}</p>
+          <p className="text-lg font-bold tracking-[0.2em]">{brand.name}</p>
           <p className="mt-2 text-sm text-text-on-dark/80">Property Management técnico · Uruguay</p>
         </div>
         <ul className="space-y-2 text-sm">

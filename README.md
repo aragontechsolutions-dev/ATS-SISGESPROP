@@ -1,7 +1,11 @@
-# ATS-SISGESPROP – Sistema de gestión de propiedades (Uruguay)
+# PRIVAT – Sistema de gestión de propiedades (Uruguay)
 
-Plataforma de *Property Management* técnico para Maldonado, Punta del Este y Rocha.
-Desarrollada por Aragon Tech Solutions por etapas. **Etapa actual: 1** (landing, mapa de
+Plataforma de *Property Management* técnico de **PRIVAT** para Maldonado, Punta del Este y Rocha
+(cobertura en todo Uruguay). Desarrollada por Aragon Tech Solutions por etapas.
+
+> **Repositorio de trabajo:** `aragontechsolutions-dev/ATS-SISGESPROP` (Aragon Tech Solutions).
+> Cuando PRIVAT tenga su propio repositorio, el código se traspasa siguiendo
+> [la guía de traspaso](docs/guia-tecnica.md#10-traspaso-al-repositorio-del-cliente). **Etapa actual: 1** (landing, mapa de
 cobertura, cotizador y panel admin), según el documento *Plan de desarrollo – Etapa 1*.
 
 ## Estado de la Etapa 1

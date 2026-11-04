@@ -1,7 +1,7 @@
 /**
  * Contenido de la landing.
  *
- * ESTADO: PROVISORIO. Textos tomados del "Documento Maestro" del cliente (secciones 3.A a 3.F).
+ * ESTADO: PROVISORIO (salvo el nombre de la empresa, PRIVAT, confirmado). Textos tomados del "Documento Maestro" del cliente (secciones 3.A a 3.F).
  * En el Bloque D este archivo se reemplaza por el contenido publicado desde el panel
  * (PUBLICATION.snapshot), sin cambiar los componentes.
  *
@@ -62,7 +62,8 @@ export const PROPERTY_TYPES: PropertyTypeOption[] = [
 
 export const content: SiteContent = {
   provisional: true,
-  brand: { name: 'Nombre comercial' },
+  /** Nombre confirmado por el cliente (P-1). Logo y dominio: pendientes. */
+  brand: { name: 'PRIVAT' },
   seo: {
     title: 'Property Management técnico en Maldonado, Punta del Este y Rocha',
     description:

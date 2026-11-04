@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Landing pública prerenderizada (y, en el Bloque D, panel /admin)",
+  "description": "PRIVAT – Landing pública prerenderizada (y, en el Bloque D, panel /admin)",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -p tsconfig.json --noEmit && vite build --outDir dist/client && vite build --ssr src/entry-server.tsx --outDir dist/server && node scripts/prerender.mjs",

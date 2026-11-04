@@ -250,3 +250,37 @@ Pasos previstos cuando existan las cuentas:
 4. Crear el usuario admin en Supabase Auth e insertar su fila en `admin_profile`.
 5. Cloudflare Turnstile: crear el widget para el dominio. La clave de sitio va en Vercel y la secreta en
    Render (`TURNSTILE_SECRET_KEY`, `TURNSTILE_ALLOWED_HOSTNAMES`).
+
+## 10. Traspaso al repositorio del cliente
+
+**Situación actual (04/11/2026):** PRIVAT todavía no tiene repositorio propio. Se trabaja en
+`aragontechsolutions-dev/ATS-SISGESPROP`. Cuando el cliente lo cree, se traspasa así.
+
+### 10.1 Qué tiene que hacer el cliente
+1. Crear un repositorio **vacío**: sin README, sin `.gitignore` y sin licencia. Así se evitan
+   conflictos con el historial existente.
+2. Dar acceso de escritura al desarrollador (o al usuario de Aragon Tech Solutions).
+3. Activar la verificación en dos pasos (2FA) en su cuenta u organización de GitHub.
+
+### 10.2 Traspaso del código (con todo el historial)
+```bash
+git remote add privat https://github.com/<organizacion-de-privat>/<repositorio>.git
+git push privat main
+git push privat claude/property-management-uruguay-sg6woy   # y cualquier otra rama en curso
+git push privat --tags
+```
+`git push` lleva los commits y las ramas. **No** lleva pull requests, comentarios, issues ni la
+configuración del repositorio: el pull request abierto se vuelve a crear en el repositorio nuevo.
+
+### 10.3 Configuración del repositorio nuevo
+- Rama predeterminada `main`, protegida (revisión obligatoria y CI en verde).
+- *Secret scanning* y *push protection* activados.
+- GitHub Actions habilitado. El workflow `ci.yml` no usa secretos, así que funciona sin cambios.
+- Si se va a seguir trabajando con Claude Code, instalar la GitHub App de Claude en el repositorio
+  nuevo.
+
+### 10.4 Después del traspaso
+- Conectar Vercel (web) y Render (API) al repositorio de PRIVAT, no al de Aragon Tech Solutions.
+- Actualizar en el `README.md` la nota de "Repositorio de trabajo".
+- Decidir qué hacer con el repositorio de Aragon Tech Solutions (archivarlo o mantenerlo como copia)
+  según el acuerdo de propiedad del código (pregunta M-3 de la investigación).
