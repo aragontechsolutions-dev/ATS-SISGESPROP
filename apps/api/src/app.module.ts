@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { APP_CONFIG, loadConfig, type AppConfig } from './config/app-config.ts';
+import { APP_CONFIG, isRateLimitDisabled, loadConfig, type AppConfig } from './config/app-config.ts';
 import { PrismaService } from './prisma/prisma.service.ts';
 import { AuthGuard } from './auth/auth.guard.ts';
 import { TOKEN_VERIFIER, TokenVerifier } from './auth/token-verifier.ts';
@@ -27,7 +27,12 @@ import { AdminAuditController } from './admin/audit.controller.ts';
 @Module({
   imports: [
     // Límite global por IP: 60 peticiones por minuto (rutas concretas pueden ser más estrictas).
-    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 60 }]),
+    // RATE_LIMIT_DISABLED solo existe para escaneos de seguridad en entornos de prueba:
+    // loadConfig impide arrancar con él en producción y aquí se vuelve a comprobar.
+    ThrottlerModule.forRoot({
+      throttlers: [{ name: 'default', ttl: 60_000, limit: 60 }],
+      skipIf: () => isRateLimitDisabled(),
+    }),
   ],
   controllers: [
     // Públicos

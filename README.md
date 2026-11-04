@@ -16,7 +16,7 @@ cobertura, cotizador y panel admin), según el documento *Plan de desarrollo –
 | B. Motor de cálculo + viático (**Hito 1**) | 4 | ✅ Reproduce al centavo los 3 casos de la planilla |
 | C. Landing, mapa, cotizador y formulario (**Hito 2**) | 5–9 | ✅ Con contenido provisorio. Falta el proveedor de email y el contenido del cliente |
 | D. Panel admin (**Hito 3**) | 10–13 | ✅ API + panel con 2FA, publicar/restaurar, consultas y auditoría. ⏳ Falta la subida de imágenes (D4) |
-| E. Calidad y entrega | 14–15 | ⏳ Pendiente |
+| E. Calidad y entrega | 14–15 | ✅ Día 14: Lighthouse 100×4, WCAG sin violaciones, ZAP sin altos, e2e en el CI. ⏳ Día 15: publicación en producción (requiere las cuentas del cliente) |
 
 ## Estructura
 
@@ -43,6 +43,8 @@ despliegue) está en [docs/guia-tecnica.md](docs/guia-tecnica.md).
 
 ## Documentación
 
+- [Manual del panel (para el equipo de PRIVAT)](docs/manual-panel.md)
+- [Informe de calidad y criterios de aceptación](docs/informe-calidad.md)
 - [Guía técnica](docs/guia-tecnica.md)
 - [Seguridad](docs/seguridad.md)
 - [Decisiones de arquitectura (ADR)](docs/adr/README.md)

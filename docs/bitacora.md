@@ -127,3 +127,26 @@ PRIVAT; los commits del Bloque D se suman a esa misma rama.
   documental de Google Drive". Análisis en
   [analisis-documentos-cliente-2026-11-04.md](analisis-documentos-cliente-2026-11-04.md).
 - **Sin impacto en la Etapa 1.** Preguntas nuevas N-1 a N-4 agregadas en los pendientes.
+
+## 2026-11-04 – Etapa 1, bloque E (día 14 del plan): calidad
+
+**Hecho**
+- **Lighthouse 13.6:** 100 en las cuatro categorías, en móvil y escritorio, con contenido final.
+- **Accesibilidad:** axe-core en 12 estados y pantallas, más teclado: 15/15.
+- **OWASP ZAP 2.17:** escaneo activo autenticado. Plan reproducible en `security/`.
+- **CI:** *job* `e2e` (landing en Chromium, Firefox y WebKit; panel; accesibilidad).
+- **Documentos:** manual del panel para el cliente ([manual-panel.md](manual-panel.md)) e
+  [informe de calidad](informe-calidad.md) con el estado de los criterios de aceptación.
+
+**Hallazgos corregidos**
+- Contraste de los números dorados de Transparencia (Lighthouse/axe).
+- Nombre accesible distinto del texto visible en la grilla de perfiles (WCAG 2.5.3).
+- Formulario enviable sin JavaScript por GET, con datos personales en la URL (ZAP).
+- `style-src 'unsafe-inline'` innecesario en la CSP (ZAP).
+- `vite preview` no aplicaba las cabeceras de Vercel: el entorno de prueba no representaba producción (ZAP).
+- Auth simulado con el mismo `kid` al reiniciar → la API rechazaba los tokens (caché del JWKS).
+
+**No posible en este entorno**
+- Firefox y WebKit: la descarga está bloqueada por la red; se prueban en el CI.
+- Docker: sin demonio; ZAP se ejecutó con la distribución Java, verificada por SHA-256.
+- Día 15 (dominio, SSL y publicación): requiere las cuentas del cliente (P-16).

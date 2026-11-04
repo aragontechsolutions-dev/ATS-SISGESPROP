@@ -20,6 +20,14 @@ export interface AppConfig {
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
 
+/**
+ * Desactiva el límite de peticiones SOLO fuera de producción (escaneos OWASP ZAP en un
+ * entorno de prueba). En producción loadConfig se niega a arrancar si está activo.
+ */
+export function isRateLimitDisabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.RATE_LIMIT_DISABLED === 'true' && env.NODE_ENV !== 'production';
+}
+
 function required(env: NodeJS.ProcessEnv, name: string): string {
   const value = env[name]?.trim();
   if (!value) throw new Error(`Variable de entorno requerida no definida: ${name}`);
@@ -45,6 +53,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error('NODE_ENV debe ser development, test o production');
   }
   const prod = nodeEnv === 'production';
+  if (prod && env.RATE_LIMIT_DISABLED === 'true') {
+    throw new Error('RATE_LIMIT_DISABLED no está permitido en producción');
+  }
 
   const port = Number(env.PORT ?? 3000);
   if (!Number.isInteger(port) || port <= 0 || port > 65535) throw new Error('PORT inválido');

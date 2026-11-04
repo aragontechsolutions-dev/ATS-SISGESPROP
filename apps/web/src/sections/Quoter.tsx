@@ -55,6 +55,7 @@ export function Quoter({ point, selection, onSelectionChange }: Props) {
         <p className="mt-4 text-lg text-text-secondary">{quoter.intro}</p>
 
         <form
+          method="post"
           className="mt-10 space-y-10"
           onSubmit={(e) => {
             e.preventDefault();

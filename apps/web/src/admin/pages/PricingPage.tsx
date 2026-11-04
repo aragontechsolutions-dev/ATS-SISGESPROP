@@ -52,9 +52,10 @@ export function PricingPage() {
                     const p = find(t.code, l);
                     return (
                       <td key={l} className="p-2 text-center">
+                        {/* WCAG 2.5.3: el nombre accesible empieza con el texto visible. */}
                         <button type="button" className="btn-secondary min-h-9 px-3 py-1 text-sm" onClick={() => setEditing({ code: t.code, level: l })}
-                          aria-label={`${p ? 'Editar' : 'Configurar'} ${t.name} nivel ${l}`}>
-                          {p ? `✓ ${p.hourlyRate} USD/h` : 'Configurar'}
+                          aria-label={p ? `${p.hourlyRate} USD/h, editar ${t.name} nivel ${l}` : `Configurar ${t.name} nivel ${l}`}>
+                          {p ? (<><span aria-hidden="true">✓ </span>{p.hourlyRate} USD/h</>) : 'Configurar'}
                         </button>
                       </td>
                     );

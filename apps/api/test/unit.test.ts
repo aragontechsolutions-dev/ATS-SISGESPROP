@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadConfig } from '../src/config/app-config.ts';
+import { isRateLimitDisabled, loadConfig } from '../src/config/app-config.ts';
 import { hashIp } from '../src/common/ip-hash.ts';
 import { parsePricingSnapshot } from '../src/simulation/pricing-snapshot.ts';
 import { isWithinTerritory } from '@ats/pricing';
@@ -37,6 +37,12 @@ describe('loadConfig', () => {
     assert.throws(() => loadConfig({ ...baseEnv, TURNSTILE_SECRET_KEY: '' }), /TURNSTILE_SECRET_KEY/);
     assert.throws(() => loadConfig({ ...baseEnv, TURNSTILE_ALLOWED_HOSTNAMES: '' }), /TURNSTILE_ALLOWED_HOSTNAMES/);
     assert.deepEqual(loadConfig(baseEnv).turnstileAllowedHostnames, ['www.cliente.com.uy', 'cliente.com.uy']);
+  });
+  it('RATE_LIMIT_DISABLED: prohibido en producción e ineficaz fuera de entornos de prueba', () => {
+    assert.throws(() => loadConfig({ ...baseEnv, RATE_LIMIT_DISABLED: 'true' }), /no está permitido en producción/);
+    assert.equal(isRateLimitDisabled({ NODE_ENV: 'production', RATE_LIMIT_DISABLED: 'true' }), false);
+    assert.equal(isRateLimitDisabled({ NODE_ENV: 'development', RATE_LIMIT_DISABLED: 'true' }), true);
+    assert.equal(isRateLimitDisabled({ NODE_ENV: 'development' }), false);
   });
   it('exige un secreto de hash de IP largo', () => {
     assert.throws(() => loadConfig({ ...baseEnv, IP_HASH_SECRET: 'corto' }), /32/);

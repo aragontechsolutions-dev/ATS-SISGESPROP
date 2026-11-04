@@ -21,8 +21,9 @@ const csp = [
   "frame-src https://challenges.cloudflare.com",
   `connect-src 'self' ${apiOrigin}`,
   "img-src 'self' data: https://tile.openstreetmap.org",
-  // Leaflet y React posicionan elementos con atributos style: requiere 'unsafe-inline' en estilos (no en scripts).
-  "style-src 'self' 'unsafe-inline'",
+  // Sin 'unsafe-inline': Leaflet y React aplican estilos por CSSOM (element.style), que la CSP no
+  // bloquea, y la app no genera atributos style="" en el HTML (verificado con las e2e).
+  "style-src 'self'",
   "font-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
@@ -91,7 +92,7 @@ const adminCsp = [
   "script-src 'self'",
   `connect-src 'self' ${apiOrigin}${supabaseOrigin ? ` ${supabaseOrigin}` : ''}`,
   "img-src 'self' data: https://tile.openstreetmap.org",
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self'",
   "font-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",

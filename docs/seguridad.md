@@ -38,6 +38,9 @@ Cada control lleva su verificación automática (archivo de prueba entre parént
 | Panel: sesión | Robo de sesión, equipo desatendido | `sessionStorage` (se borra al cerrar la pestaña), cierre por inactividad (15 min), 401 → cierra sesión; administrador desactivado → 403 | e2e del panel; *403 si el administrador está desactivado* |
 | Panel: aislamiento | Exposición del código del panel | Página aparte con bundle propio (la landing no lo descarga), CSP propia, `noindex`, `no-store` | verificación del build |
 | Build de la web | Publicar contenido provisorio por error | `REQUIRE_PUBLISHED_CONTENT=true` detiene el build si no se lee el contenido publicado | verificado (código de salida 1) |
+| Web (navegador) | Envío del formulario sin JavaScript (datos personales en la URL) | `method="post"` y botón deshabilitado hasta hidratar (hallazgo de ZAP) | revisión del escaneo ZAP |
+| Web (navegador) | Estilos inyectados | CSP `style-src 'self'` (sin `unsafe-inline`) en la landing y el panel | e2e › *la CSP efectiva bloquea scripts inline y estilos inline inyectados* |
+| Escaneos | Desactivar el límite de peticiones en producción | `RATE_LIMIT_DISABLED` solo fuera de producción: la API no arranca con él en producción y se vuelve a comprobar en cada petición | `unit.test.ts` › *RATE_LIMIT_DISABLED…* |
 | Errores | Fuga de información | Mensajes genéricos en autenticación; `/health` no expone versión ni entorno; mensajes de validación desactivados en producción | revisión de código |
 
 ## 2. "Octubre Negro" (octubre 2026): estado en este repositorio
@@ -50,6 +53,27 @@ Cada control lleva su verificación automática (archivo de prueba entre parént
 | React Server Components CVE-2026-23870 | No aplica: `npm ls react-server-dom-webpack` está vacío |
 | GhostAction / npm comprometidos | Ver sección 3 |
 | Cambio de GRANT de Supabase (30/10) | Cubierto: permisos explícitos (REVOKE) en la migración de seguridad |
+
+## 2 bis. Escaneo OWASP ZAP y resultados
+
+Ver el [informe de calidad](informe-calidad.md#3-seguridad). En resumen: ZAP 2.17.0 (paquete verificado por
+SHA-256), escaneo activo autenticado de la landing, el panel y la API con `security/zap-plan.yaml` y
+`security/run-zap.sh`, que solo admite destinos locales y borra al terminar el plan generado con el token.
+Resultado final: **0 altos y 0 bajos**; las alertas medias restantes están analizadas como no aplicables.
+
+Cómo repetirlo (entorno de prueba):
+```bash
+# API con NODE_ENV=development y RATE_LIMIT_DISABLED=true; web con `vite preview`
+ZAP_HOME=/ruta/ZAP_2.17.0 ZAP_WEB_URL=http://127.0.0.1:4173 ZAP_API_URL=http://127.0.0.1:3000 \
+  ZAP_ADMIN_TOKEN=<token aal2 de prueba> ZAP_OUT_DIR=/tmp/zap-out security/run-zap.sh
+```
+
+**Decisión sobre la CSP:**
+- La CSP completa va en un `<meta>` generado en el build, porque depende de la URL de la API de cada
+  entorno.
+- `vercel.json` agrega por cabecera `frame-ancestors 'none'`, que no funciona en `<meta>`.
+- El navegador aplica ambas. ZAP solo evalúa la cabecera, por eso marca alertas medias de CSP.
+- Mejora futura: generar la CSP completa como cabecera en el build (Build Output API de Vercel).
 
 ## 3. Cadena de suministro
 
@@ -74,7 +98,8 @@ Cada control lleva su verificación automática (archivo de prueba entre parént
 - Subida de imágenes con URL firmada de un solo uso (Bloque D4, pendiente).
 - Configuración del proyecto Supabase: MFA TOTP, registro público deshabilitado y duración de sesión
   (ver guía técnica, "Configuración obligatoria del proyecto Supabase").
-- Prueba e2e en el CI (requiere instalar navegadores en el workflow) y escaneo de accesibilidad automatizado (Bloque E).
+- Revisión manual con lector de pantalla (NVDA o VoiceOver).
+- ZAP en el CI (hoy se ejecuta manualmente; ver la sección 2 bis).
 - Subida de imágenes: URL firmada de un solo uso, solo JPG/PNG/WebP, tamaño máximo, sin metadatos (Bloque D).
 - Cierre de sesión por inactividad en el panel (Bloque D).
 - Escaneo OWASP ZAP y Lighthouse (Bloque E).

@@ -192,6 +192,25 @@ La prueba verifica 9 puntos:
 8. En móvil no hay desplazamiento horizontal.
 9. El menú móvil es accesible.
 
+## 4 quater. Calidad: Lighthouse, accesibilidad y escaneo de seguridad
+
+Resultados en el [informe de calidad](informe-calidad.md).
+
+- **e2e** (Playwright 1.63.0, dependencia de desarrollo de `apps/web`):
+  - `node e2e/smoke.e2e.mjs`: landing. Con `BROWSER=chromium|firefox|webkit` elige el motor.
+  - `node e2e/admin.e2e.mjs`: panel.
+  - `node e2e/a11y.e2e.mjs`: accesibilidad, con axe-core 4.14 y navegación por teclado.
+
+  Las tres usan la API y el Auth simulado. Reinicia el Auth simulado antes de `admin.e2e.mjs`. En este
+  entorno de desarrollo solo está instalado Chromium; Firefox y WebKit corren en el CI.
+- **CI:** el *job* `e2e` de `.github/workflows/ci.yml` levanta PostgreSQL, el Auth simulado, la API
+  (`RATE_LIMIT_DISABLED=true`) y la web, y corre todas las pruebas anteriores.
+- **Lighthouse:** con `npx lighthouse@13.6.0 http://127.0.0.1:4173/` (móvil) y `--preset=desktop`.
+  No es una dependencia del proyecto.
+- **OWASP ZAP:** ver [seguridad](seguridad.md#2-bis-escaneo-owasp-zap-y-resultados).
+- **Vista previa = producción:** `vite preview` aplica las cabeceras de `vercel.json` (fuente única), así
+  las pruebas y escaneos locales reflejan lo que servirá Vercel.
+
 ## 4 ter. Panel de administración (`/admin/`)
 
 Ver [ADR-013](adr/ADR-013-panel-admin.md). Pestañas: **Contenidos**, **Precios y viáticos**,

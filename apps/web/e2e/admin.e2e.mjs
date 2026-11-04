@@ -86,11 +86,11 @@ try {
 
   await step('precios: configurar perfil Casa premium nivel 3', async () => {
     await page.getByRole('button', { name: 'Precios y viáticos' }).click();
-    await page.getByRole('button', { name: /Casa premium 400-700 m² nivel 3/ }).click();
+    await page.getByRole('button', { name: /Configurar Casa premium 400-700 m² nivel 3/ }).click();
     const values = { 'Visitas por mes': '4', 'Horas por visita': '2', 'Horas de traslado por visita': '1', 'Horas de administración (mes)': '5', 'Horas de coordinación (mes)': '4', 'Horas de gestión de personal (mes)': '2', 'Valor hora (USD)': '40', 'Gastos fijos (USD/mes)': '90', Prima: '0.2', 'Coeficiente de temporada alta': '2', 'Meses de temporada alta': '2.5' };
     for (const [label, v] of Object.entries(values)) await page.getByLabel(label, { exact: true }).fill(v);
     await page.getByRole('button', { name: 'Guardar perfil' }).click();
-    await page.getByRole('button', { name: /Editar Casa premium 400-700 m² nivel 3/ }).waitFor();
+    await page.getByRole('button', { name: /40 USD\/h, editar Casa premium 400-700 m² nivel 3/ }).waitFor();
   });
 
   await step('viáticos: marcar la base en el mapa y guardar', async () => {
