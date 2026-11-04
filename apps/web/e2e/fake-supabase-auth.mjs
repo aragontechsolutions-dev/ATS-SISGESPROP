@@ -17,7 +17,9 @@ export const USER = { id: '00000000-0000-4000-8000-000000000001', email: 'e2e@te
 export const TOTP_CODE = '123456';
 
 const { privateKey, publicKey } = await generateKeyPair('ES256');
-const jwk = { ...(await exportJWK(publicKey)), kid: 'fake-e2e', alg: 'ES256', use: 'sig' };
+// kid nuevo en cada arranque (como una rotación real): la API cachea el JWKS por kid y,
+// con el mismo kid y otra clave, rechazaría los tokens hasta que venza su caché.
+const jwk = { ...(await exportJWK(publicKey)), kid: `fake-e2e-${randomUUID()}`, alg: 'ES256', use: 'sig' };
 const factors = []; // { id, factor_type: 'totp', status: 'unverified' | 'verified', friendly_name }
 
 async function session(aal) {

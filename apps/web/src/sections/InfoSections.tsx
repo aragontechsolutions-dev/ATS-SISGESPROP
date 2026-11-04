@@ -56,12 +56,11 @@ export function Transparency() {
           {transparency.title}
         </h2>
         <div className="mt-12 grid gap-10 md:grid-cols-3">
-          {transparency.items.map((item, i) => (
+          {transparency.items.map((item) => (
             <div key={item.title}>
-              <span className="text-3xl font-bold text-accent" aria-hidden="true">
-                0{i + 1}
-              </span>
-              <h3 className="mt-3 text-xl font-bold">{item.title}</h3>
+              {/* Detalle dorado como línea (no como texto): el dorado sobre fondo claro no llega a 3:1 (ADR-010). */}
+              <div className="h-px w-12 bg-accent" aria-hidden="true" />
+              <h3 className="mt-4 text-xl font-bold">{item.title}</h3>
               <p className="mt-3 text-text-secondary">{item.text}</p>
             </div>
           ))}

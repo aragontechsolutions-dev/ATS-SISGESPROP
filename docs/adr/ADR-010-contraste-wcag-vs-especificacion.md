@@ -18,8 +18,10 @@
    (coincide con la especificación: "foco visible con borde verde bosque" en formularios).
 2. Los **campos de formulario** usan borde gris cálido #686B67 (5,4:1) en lugar de #E2DED5, porque
    WCAG 1.4.11 exige 3:1 para identificar un campo. #E2DED5 se mantiene en tarjetas y divisores.
-3. Los números decorativos dorados ("01, 02, 03" en Transparencia) son decorativos (`aria-hidden`) y
-   quedan exentos.
+3. ~~Los números dorados "01, 02, 03" de Transparencia quedan exentos por ser decorativos.~~
+   **Corregido en el Bloque E:** Lighthouse/axe los marcó (2,54:1). Al ser texto dorado sobre fondo
+   claro, contradicen también la especificación ("evitar textos en dorado"). Se reemplazaron por una
+   línea dorada fina (elemento decorativo, no texto).
 
 **Consecuencias.** El punto 2 se aparta de la especificación ("borde #E2DED5" en formularios). La
 propia especificación fija WCAG 2.2 AA como objetivo, así que prevalece la accesibilidad.
