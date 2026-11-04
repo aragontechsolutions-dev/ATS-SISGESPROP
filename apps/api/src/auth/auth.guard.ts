@@ -27,6 +27,7 @@ export type AuthenticatedRequest = Request & { admin?: AdminPrincipal };
  *  2. Exige "Authorization: Bearer <JWT>" válido (firma JWKS, iss, aud, exp, alg).
  *  3. Exige segundo factor (aal2), requisito del plan para el panel.
  *  4. El rol se lee de admin_profile en la base, nunca del token ni de user_metadata.
+ *  5. Un administrador desactivado (disabled_at) no entra aunque su token sea válido.
  * Los mensajes de error son genéricos para no filtrar información.
  */
 @Injectable()
@@ -58,7 +59,8 @@ export class AuthGuard implements CanActivate {
     if (token.aal !== 'aal2') throw new ForbiddenException('Se requiere segundo factor de autenticación');
 
     const profile = await this.prisma.adminProfile.findUnique({ where: { id: token.sub } });
-    if (!profile || profile.role !== 'ADMIN') {
+    // Perfil inexistente, de otro rol o desactivado (acceso revocado): mismo mensaje genérico.
+    if (!profile || profile.role !== 'ADMIN' || profile.disabledAt) {
       this.logger.warn(`Acceso denegado a usuario sin perfil de administrador (sub=${token.sub})`);
       throw new ForbiddenException('Acceso denegado');
     }

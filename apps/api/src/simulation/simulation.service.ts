@@ -1,9 +1,8 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { computeFee } from '@ats/pricing';
 import { APP_CONFIG, type AppConfig } from '../config/app-config.ts';
 import { PrismaService } from '../prisma/prisma.service.ts';
 import { hashIp } from '../common/ip-hash.ts';
-import { PublicationService, travelFor } from '../publication/publication.service.ts';
+import { PublicationService, quoteFor } from '../publication/publication.service.ts';
 import type { SimulateDto } from './simulate.dto.ts';
 
 /** Respuesta pública: solo totales, distancia y viático. Nunca valor hora ni prima. */
@@ -30,16 +29,13 @@ export class SimulationService {
     const { publicationId, pricing } = await this.publications.getPricing();
 
     const propertyType = await this.prisma.propertyType.findUnique({ where: { code: dto.propertyTypeCode } });
-    const profile = pricing.profiles.find(
-      (p) => p.propertyTypeCode === dto.propertyTypeCode && p.serviceLevel === dto.serviceLevel,
-    );
-    if (!propertyType || !profile) {
+    if (!propertyType) {
       throw new NotFoundException('No hay tarifa publicada para ese tipo de propiedad y nivel de servicio');
     }
-
-    const point = { lat: dto.lat, lng: dto.lng };
-    const { travel, toleranceKm } = travelFor(pricing, point);
-    const fee = computeFee({ profile, billableKm: travel.billableKm, costPerKm: pricing.travel.costPerKm });
+    const { profile, travel, toleranceKm, fee } = quoteFor(pricing, dto.propertyTypeCode, dto.serviceLevel, {
+      lat: dto.lat,
+      lng: dto.lng,
+    });
 
     const simulation = await this.prisma.simulation.create({
       data: {

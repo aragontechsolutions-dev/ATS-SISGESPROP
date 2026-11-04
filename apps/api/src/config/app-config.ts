@@ -14,6 +14,8 @@ export interface AppConfig {
   turnstileSecretKey: string;
   /** Dominios desde los que se acepta un token de Turnstile (vacío = no se valida el hostname). */
   turnstileAllowedHostnames: string[];
+  /** Deploy hook de Vercel: "Publicar" dispara la recompilación de la web. Opcional. */
+  vercelDeployHookUrl: string | null;
 }
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
@@ -78,6 +80,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error('TURNSTILE_ALLOWED_HOSTNAMES es obligatorio en producción');
   }
 
+  const hook = env.VERCEL_DEPLOY_HOOK_URL?.trim() || null;
+  if (hook) parseUrl('VERCEL_DEPLOY_HOOK_URL', hook, true, true);
+
   return {
     nodeEnv,
     port,
@@ -88,5 +93,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     trustProxyHops,
     turnstileSecretKey: required(env, 'TURNSTILE_SECRET_KEY'),
     turnstileAllowedHostnames,
+    vercelDeployHookUrl: hook,
   };
 }
