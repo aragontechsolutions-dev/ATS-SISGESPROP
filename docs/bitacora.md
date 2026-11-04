@@ -1,0 +1,70 @@
+# Bitácora de desarrollo
+
+## 2026-11-03 – Etapa 1, bloques A y B (días 1–4 del plan)
+
+**Hecho**
+1. Monorepo con npm workspaces, Node 24.22.1, `.npmrc` endurecido ([ADR-001](adr/ADR-001-monorepo-npm-workspaces.md)).
+2. Motor de cálculo `packages/pricing`: fórmula del abono, viático (Haversine × factor de ruta, radio
+   sin cargo), validación de territorio con tolerancia. 25 pruebas; los 3 casos de la planilla dan
+   el resultado al centavo (**Hito 1**).
+3. Modelo de datos: 17 tablas del DER Etapa 1 en Prisma 7.10.1, migración inicial y migración de
+   seguridad (RLS + REVOKE + `audit_log` inmutable + FK a `auth.users`); seed idempotente con datos
+   confirmados.
+4. API NestJS 12: configuración validada, helmet, CORS exacto, límite de 20 KB, límite de peticiones,
+   guard global JWT/JWKS con 2FA y rol en base, `/health`, `/admin/me`, `POST /public/simulations`.
+5. 41 pruebas de la API (unitarias, integración con PostgreSQL y seguridad).
+6. CI en GitHub Actions con acciones fijadas por SHA, verificado localmente desde cero.
+
+**Hallazgos durante el desarrollo**
+- `_prisma_migrations` quedaba sin RLS: se agregó a la migración de seguridad.
+- El contorno 1:10m deja fuera puntos costeros reales (Cabo Polonio, Punta Ballena): se agregó una
+  tolerancia de 2 km ([ADR-006](adr/ADR-006-contorno-uruguay-tolerancia.md)).
+- En la hoja CARTERA las visitas/mes del Apto (2) y de la Chacra (5) y los meses de alta del Apto (2,5)
+  **están en la planilla**: no son deducciones. Solo el costo/km 0,35 es deducido.
+- La etiqueta `latest` de `prisma` apunta a una versión candidata (8.0.0-rc): se fijó 7.10.1
+  ([ADR-007](adr/ADR-007-versiones-y-pruebas.md)).
+
+**Siguiente**: Bloque C (día 5): proyecto Vite + Tailwind con los tokens de identidad visual y prueba de
+prerender.
+
+## 2026-11-03/04 – Etapa 1, bloque C (días 5–9 del plan) – Hito 2
+
+**Repositorio**
+- Se creó `main` con un commit inicial mínimo y la rama de trabajo se reubicó encima (contenido
+  idéntico) para abrir el PR aragontechsolutions-dev/ATS-SISGESPROP#1.
+
+**Hecho**
+1. Web `apps/web`: React 19.3.1 + Vite 8.3.5 + Tailwind 4.3.3 con los tokens de la especificación de
+   identidad. Secciones: encabezado, hero, servicios, transparencia, cobertura, cotizador, testimonios y
+   FAQ (ocultos si están vacíos), contacto y pie de página.
+2. Prerender con SSR nativo de Vite (riesgo del día 5 resuelto, [ADR-011](adr/ADR-011-prerender-vite-ssr.md)).
+3. Mapa de cobertura con Leaflet + OSM, carga diferida y contorno compartido con la API (movido a
+   `@ats/pricing/uruguay.geometry.json`).
+4. Cotizador de 3 pasos conectado a la API.
+5. API:
+   - `GET /public/coverage` y `POST /public/travel-estimate`;
+   - `POST /public/leads` con Turnstile, consentimiento y aviso desacoplado
+     ([ADR-009](adr/ADR-009-formulario-turnstile-consentimiento.md));
+   - `PublicationService` y la función `travelFor` compartidas.
+6. Seguridad web: CSP en `<meta>` generada en el build y cabeceras en `vercel.json`.
+7. Pruebas:
+   - API: 57 (antes 41);
+   - motor: 25;
+   - e2e en Chromium: 9 pasos, escritorio y móvil.
+
+**Hallazgos durante el desarrollo**
+- Los archivos de prueba en paralelo compartían la base: se fijó `--test-concurrency=1`.
+- Las pruebas del formulario chocaban con el propio límite de 5/min: se usa una IP distinta por
+  petición (`X-Forwarded-For`), lo que de paso prueba la IP real detrás de un proxy.
+- Contraste: el foco dorado y el borde #E2DED5 de los campos no cumplían WCAG AA
+  ([ADR-010](adr/ADR-010-contraste-wcag-vs-especificacion.md)).
+- El encabezado se saturaba en 1366 px: se compactó "Acceso clientes · Pronto" y el menú completo se
+  muestra desde 1280 px.
+- Tailwind 4 no permite `@apply` de clases propias en `@layer components`: se usa `@utility`.
+- La regla `coverage/` del `.gitignore` ignoraba la carpeta de código `apps/api/src/coverage/`: se
+  limitó a las carpetas de reportes (`/coverage/`, `apps/*/coverage/`, `packages/*/coverage/`).
+- `npm install` en un workspace a veces no guarda las dependencias en la primera ejecución: siempre se
+  verifica el `package.json` después de instalar.
+
+**Siguiente:** Bloque D (panel admin: login con 2FA, contenidos, parámetros, viáticos, consultas,
+publicar).

@@ -1,0 +1,42 @@
+{
+  "name": "@ats/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "API NestJS: cotizador, viáticos, contenidos y consultas (Etapa 1)",
+  "engines": {
+    "node": ">=24.22.1 <25"
+  },
+  "scripts": {
+    "prisma:generate": "prisma generate",
+    "build": "npm run prisma:generate && tsc -p tsconfig.build.json",
+    "typecheck": "npm run prisma:generate && tsc -p tsconfig.json --noEmit",
+    "test": "npm run prisma:generate && tsc -p tsconfig.json && node --test --test-concurrency=1 --test-timeout=30000 \"dist-test/test/**/*.test.js\"",
+    "start": "node dist/src/main.js",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "prisma db execute --file prisma/seed.sql"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "12.3.2",
+    "@types/express": "5.0.6",
+    "@types/node": "24.19.2",
+    "prisma": "7.10.1",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "@ats/pricing": "0.1.0",
+    "@nestjs/common": "12.3.2",
+    "@nestjs/core": "12.3.2",
+    "@nestjs/platform-express": "12.3.2",
+    "@nestjs/throttler": "6.7.1",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "class-transformer": "0.5.1",
+    "class-validator": "0.15.1",
+    "decimal.js": "10.6.0",
+    "helmet": "8.3.0",
+    "jose": "6.2.15",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  }
+}

@@ -1,0 +1,293 @@
+// Modelo de datos – Etapa 1 (17 tablas). Fuente: DER_Etapa1 y Plan de desarrollo, sección 5.
+// Reglas: importes en Decimal (nunca float); IP solo como hash (HMAC); todas las
+// tablas con RLS activa y sin permisos para anon/authenticated (ver migración rls).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────────── Control ─────────────────────────────
+
+enum AdminRole {
+  ADMIN
+}
+
+/// Usuario del panel. id = auth.users.id de Supabase (FK creada en migración SQL).
+model AdminProfile {
+  id        String   @id @db.Uuid
+  email     String   @unique
+  fullName  String   @map("full_name")
+  role      AdminRole @default(ADMIN)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  contentBlocks ContentBlock[]
+  mediaAssets   MediaAsset[]
+  publications  Publication[]
+  auditLogs     AuditLog[]
+
+  @@map("admin_profile")
+}
+
+/// Registro de cambios. Solo inserción (UPDATE/DELETE bloqueados por trigger).
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  actorId    String?  @map("actor_id") @db.Uuid
+  actor      AdminProfile? @relation(fields: [actorId], references: [id])
+  action     String
+  entity     String
+  entityId   String   @map("entity_id")
+  beforeData Json?    @map("before_data")
+  afterData  Json?    @map("after_data")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([entity, entityId])
+  @@map("audit_log")
+}
+
+// ──────────────────────────── Contenidos ────────────────────────────
+
+/// Textos de secciones (hero, transparencia, cobertura, contacto, footer…).
+model ContentBlock {
+  id          String   @id @default(uuid()) @db.Uuid
+  section     String
+  key         String
+  value       Json
+  sortOrder   Int      @default(0) @map("sort_order")
+  visible     Boolean  @default(true)
+  updatedById String?  @map("updated_by") @db.Uuid
+  updatedBy   AdminProfile? @relation(fields: [updatedById], references: [id])
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([section, key])
+  @@map("content_block")
+}
+
+model ServiceLevel {
+  id            String   @id @default(uuid()) @db.Uuid
+  level         Int      @unique
+  name          String
+  description   String
+  includedItems Json     @map("included_items")
+  imageId       String?  @map("image_id") @db.Uuid
+  image         MediaAsset? @relation(fields: [imageId], references: [id])
+
+  @@map("service_level")
+}
+
+model Faq {
+  id        String  @id @default(uuid()) @db.Uuid
+  question  String
+  answer    String
+  sortOrder Int     @default(0) @map("sort_order")
+  visible   Boolean @default(true)
+
+  @@map("faq")
+}
+
+/// Solo testimonios reales con autorización del autor (si no hay, la sección se oculta).
+model Testimonial {
+  id           String   @id @default(uuid()) @db.Uuid
+  author       String
+  text         String
+  authorizedAt DateTime @map("authorized_at") @db.Date
+  visible      Boolean  @default(false)
+
+  @@map("testimonial")
+}
+
+enum MediaVariant {
+  DESKTOP
+  MOBILE
+  GENERAL
+}
+
+model MediaAsset {
+  id           String       @id @default(uuid()) @db.Uuid
+  storagePath  String       @unique @map("storage_path")
+  altText      String       @default("") @map("alt_text")
+  variant      MediaVariant @default(GENERAL)
+  width        Int
+  height       Int
+  uploadedById String?      @map("uploaded_by") @db.Uuid
+  uploadedBy   AdminProfile? @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  serviceLevels ServiceLevel[]
+
+  @@map("media_asset")
+}
+
+/// Versión publicada: copia inmutable de contenidos y parámetros vigentes.
+/// El cotizador público calcula con la última publicación, nunca con el borrador.
+model Publication {
+  id            String   @id @default(uuid()) @db.Uuid
+  snapshot      Json
+  publishedById String   @map("published_by") @db.Uuid
+  publishedBy   AdminProfile @relation(fields: [publishedById], references: [id])
+  publishedAt   DateTime @default(now()) @map("published_at") @db.Timestamptz(6)
+  deployId      String?  @map("deploy_id")
+
+  @@index([publishedAt])
+  @@map("publication")
+}
+
+// ──────────────────────────── Cotizador ────────────────────────────
+
+model PropertyType {
+  id        String @id @default(uuid()) @db.Uuid
+  code      String @unique
+  name      String
+  sortOrder Int    @default(0) @map("sort_order")
+
+  calcProfiles CalcProfile[]
+  simulations  Simulation[]
+  leads        Lead[]
+
+  @@map("property_type")
+}
+
+/// Perfil de cálculo por tipo de propiedad y nivel de servicio (5 × 3 = 15).
+/// Información comercial sensible: nunca se envía al navegador.
+model CalcProfile {
+  id             String       @id @default(uuid()) @db.Uuid
+  propertyTypeId String       @map("property_type_id") @db.Uuid
+  propertyType   PropertyType @relation(fields: [propertyTypeId], references: [id])
+  serviceLevel   Int          @map("service_level")
+  visitsPerMonth Decimal      @map("visits_per_month") @db.Decimal(6, 2)
+  hoursPerVisit  Decimal      @map("hours_per_visit") @db.Decimal(6, 2)
+  travelHours    Decimal      @map("travel_hours") @db.Decimal(6, 2)
+  adminHours     Decimal      @map("admin_hours") @db.Decimal(6, 2)
+  coordHours     Decimal      @map("coord_hours") @db.Decimal(6, 2)
+  staffHours     Decimal      @map("staff_hours") @db.Decimal(6, 2)
+  hourlyRate     Decimal      @map("hourly_rate") @db.Decimal(12, 2)
+  fixedCosts     Decimal      @map("fixed_costs") @db.Decimal(12, 2)
+  premiumPct     Decimal      @map("premium_pct") @db.Decimal(6, 4)
+  highCoef       Decimal      @map("high_coef") @db.Decimal(6, 3)
+  highMonths     Decimal      @map("high_months") @db.Decimal(4, 2)
+
+  @@unique([propertyTypeId, serviceLevel])
+  @@map("calc_profile")
+}
+
+/// Parámetros generales (p. ej. TERRITORY_TOLERANCE_KM).
+model PricingParam {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  value     Decimal  @db.Decimal(14, 4)
+  validFrom DateTime @default(now()) @map("valid_from") @db.Date
+
+  @@map("pricing_param")
+}
+
+// ───────────────────────────── Viáticos ─────────────────────────────
+
+enum TravelMode {
+  POR_KM
+  POR_TRAMOS
+}
+
+/// Configuración del viático (una sola fila vigente).
+model TravelConfig {
+  id           String     @id @default(uuid()) @db.Uuid
+  baseLabel    String     @map("base_label")
+  baseLat      Decimal    @map("base_lat") @db.Decimal(9, 6)
+  baseLng      Decimal    @map("base_lng") @db.Decimal(9, 6)
+  freeRadiusKm Decimal    @default(0) @map("free_radius_km") @db.Decimal(8, 2)
+  routeFactor  Decimal    @default(1.3) @map("route_factor") @db.Decimal(4, 2)
+  costPerKm    Decimal    @default(0.35) @map("cost_per_km") @db.Decimal(8, 4)
+  mode         TravelMode @default(POR_KM)
+
+  tiers TravelTier[]
+
+  @@map("travel_config")
+}
+
+model TravelTier {
+  id       String       @id @default(uuid()) @db.Uuid
+  configId String       @map("config_id") @db.Uuid
+  config   TravelConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+  fromKm   Decimal      @map("from_km") @db.Decimal(8, 2)
+  toKm     Decimal      @map("to_km") @db.Decimal(8, 2)
+  amount   Decimal      @db.Decimal(12, 2)
+
+  @@map("travel_tier")
+}
+
+model Locality {
+  id         String  @id @default(uuid()) @db.Uuid
+  department String
+  name       String
+  lat        Decimal @db.Decimal(9, 6)
+  lng        Decimal @db.Decimal(9, 6)
+
+  @@unique([department, name])
+  @@map("locality")
+}
+
+// ───────────────────────────── Consultas ─────────────────────────────
+
+/// Cada simulación guarda sus parámetros para poder reproducirla.
+model Simulation {
+  id             String       @id @default(uuid()) @db.Uuid
+  propertyTypeId String       @map("property_type_id") @db.Uuid
+  propertyType   PropertyType @relation(fields: [propertyTypeId], references: [id])
+  serviceLevel   Int          @map("service_level")
+  lat            Decimal      @db.Decimal(9, 6)
+  lng            Decimal      @db.Decimal(9, 6)
+  distanceKm     Decimal      @map("distance_km") @db.Decimal(8, 2)
+  billableKm     Decimal      @map("billable_km") @db.Decimal(8, 2)
+  lowFee         Decimal      @map("low_fee") @db.Decimal(14, 2)
+  highFee        Decimal      @map("high_fee") @db.Decimal(14, 2)
+  annualFee      Decimal      @map("annual_fee") @db.Decimal(14, 2)
+  inputsSnapshot Json         @map("inputs_snapshot")
+  ipHash         String       @map("ip_hash")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  lead Lead?
+
+  @@index([createdAt])
+  @@map("simulation")
+}
+
+enum LeadStatus {
+  NUEVA
+  CONTACTADA
+  CERRADA
+}
+
+model Lead {
+  id             String        @id @default(uuid()) @db.Uuid
+  name           String
+  email          String
+  phone          String?
+  propertyTypeId String?       @map("property_type_id") @db.Uuid
+  propertyType   PropertyType? @relation(fields: [propertyTypeId], references: [id])
+  simulationId   String?       @unique @map("simulation_id") @db.Uuid
+  simulation     Simulation?   @relation(fields: [simulationId], references: [id])
+  message        String?
+  status         LeadStatus    @default(NUEVA)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  consent ConsentRecord?
+
+  @@index([status, createdAt])
+  @@map("lead")
+}
+
+/// Consentimiento Ley 18.331 con la versión de la política aceptada.
+model ConsentRecord {
+  id            String   @id @default(uuid()) @db.Uuid
+  leadId        String   @unique @map("lead_id") @db.Uuid
+  lead          Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  policyVersion String   @map("policy_version")
+  grantedAt     DateTime @default(now()) @map("granted_at") @db.Timestamptz(6)
+  ipHash        String   @map("ip_hash")
+
+  @@map("consent_record")
+}

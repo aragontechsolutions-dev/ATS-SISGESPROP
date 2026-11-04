@@ -1,0 +1,90 @@
+# CI – Etapa 1. Corre en cada push y pull request.
+# Seguridad de la cadena de suministro (ver docs/seguridad.md):
+#  - permisos mínimos del GITHUB_TOKEN (solo lectura)
+#  - acciones fijadas por SHA de commit (no por etiqueta movible)
+#  - npm ci con ignore-scripts (.npmrc) y auditoría de dependencias
+#  - sin secretos: la base de datos es un contenedor efímero de pruebas
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ats
+          POSTGRES_PASSWORD: ats_ci_only
+          POSTGRES_DB: ats_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ats -d ats_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DIRECT_URL: postgresql://ats:ats_ci_only@localhost:5432/ats_ci
+      TEST_DATABASE_URL: postgresql://ats:ats_ci_only@localhost:5432/ats_ci
+    steps:
+      - name: Checkout (actions/checkout v7.0.1)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Node.js (actions/setup-node v7.1.0)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Instalar dependencias (sin scripts)
+        run: npm ci --ignore-scripts
+
+      - name: Auditoría de dependencias (falla con severidad alta)
+        run: npm audit --audit-level=high
+
+      - name: Motor de cálculo – tipos, pruebas (3 casos de la planilla) y build
+        run: |
+          npm run typecheck -w @ats/pricing
+          npm test -w @ats/pricing
+          npm run build -w @ats/pricing
+
+      - name: Simular esquema auth de Supabase
+        run: |
+          psql "$DIRECT_URL" -v ON_ERROR_STOP=1 -c "CREATE SCHEMA auth; CREATE TABLE auth.users (id uuid PRIMARY KEY, email text);"
+
+      - name: Migraciones y datos iniciales
+        working-directory: apps/api
+        run: |
+          npx prisma migrate deploy
+          npx prisma db execute --file prisma/seed.sql
+
+      - name: API – tipos, pruebas de integración y seguridad, build
+        working-directory: apps/api
+        run: |
+          npm run typecheck
+          npm test
+          npm run build
+
+      - name: Web – tipos, build y prerender (landing estática con CSP)
+        working-directory: apps/web
+        env:
+          VITE_API_URL: https://api.example.invalid
+          VITE_SITE_URL: https://www.example.invalid
+          VITE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+        run: |
+          npm run typecheck
+          npm run build
+          grep -q '<h1' dist/client/index.html
+          grep -q 'Content-Security-Policy' dist/client/index.html
