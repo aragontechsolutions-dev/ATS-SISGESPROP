@@ -29,6 +29,15 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 | ★ P-17 | Persona que aprueba vistas previas (48 h) | Todos |
 | P-16b | Repositorio GitHub propio de PRIVAT (el cliente lo está creando). Mientras tanto se trabaja en `aragontechsolutions-dev/ATS-SISGESPROP` | Traspaso |
 
+## Preguntas nuevas (documentos del 04/11/2026, ver [análisis](analisis-documentos-cliente-2026-11-04.md))
+
+| Ref. | Pregunta | Etapa |
+|---|---|---|
+| N-1 | ¿PRIVAT administra **alquileres** (inquilinos, contratos de arrendamiento, cobro de alquiler, comisión)? El estudio de gastos los incluye; afecta el alcance y el encuadre de la Ley 19.574 | 2 |
+| N-2 | Clasificación de propiedades: ¿se guardan los dos atributos, el tipo tarifario (5 tipos, para cotizar) y el régimen (6 tipos A–F, para gastos)? | 2 |
+| N-3 | Documentos de cada propiedad: ¿Supabase Storage dentro de la plataforma o integración con su Google Drive? | 2/3 |
+| N-4 | ¿El cliente usa Google Workspace (cuenta de empresa) o una cuenta personal de Google? Afecta la integración y la seguridad | 2/3 |
+
 ## Decisiones que requieren aprobación del cliente
 
 - **ADR-010:** borde de los campos de formulario en gris cálido (#686B67) en lugar de #E2DED5, para

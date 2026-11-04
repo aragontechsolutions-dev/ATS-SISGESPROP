@@ -118,3 +118,12 @@ PRIVAT; los commits del Bloque D se suman a esa misma rama.
 **Siguiente:**
 - D4: imágenes con URL firmada, cuando existan Supabase Storage y las fotos.
 - Bloque E: calidad (OWASP ZAP, Lighthouse, accesibilidad, e2e en el CI) y entrega.
+
+## 2026-11-04 – Documentos nuevos del cliente
+
+- Se compararon palabra por palabra los 3 `.docx` recibidos con los PDF originales: **mismo contenido**
+  (versiones editables).
+- **Nuevos:** "Estudio de gastos y expensas de viviendas" (módulo de gastos, Etapa 2) y "Estructura
+  documental de Google Drive". Análisis en
+  [analisis-documentos-cliente-2026-11-04.md](analisis-documentos-cliente-2026-11-04.md).
+- **Sin impacto en la Etapa 1.** Preguntas nuevas N-1 a N-4 agregadas en los pendientes.
