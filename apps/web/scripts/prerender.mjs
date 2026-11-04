@@ -83,6 +83,26 @@ if (siteUrl) {
   await writeFile(path.join(clientDir, 'robots.txt'), `${robots.trim()}\nSitemap: ${siteUrl}/sitemap.xml\n`);
 }
 
+// ---------------- Panel /admin (no se prerenderiza: solo su CSP) ----------------
+// Sin Turnstile; se conecta a la API y a Supabase Auth; img data: para el QR del 2FA.
+const supabaseOrigin = process.env.VITE_SUPABASE_URL ? new URL(process.env.VITE_SUPABASE_URL).origin : null;
+const adminCsp = [
+  "default-src 'self'",
+  "script-src 'self'",
+  `connect-src 'self' ${apiOrigin}${supabaseOrigin ? ` ${supabaseOrigin}` : ''}`,
+  "img-src 'self' data: https://tile.openstreetmap.org",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-src 'none'",
+].join('; ');
+const adminPath = path.join(clientDir, 'admin/index.html');
+const adminHtml = await readFile(adminPath, 'utf8');
+if (!adminHtml.includes('<!--app-head-->')) throw new Error('admin/index.html sin marcador <!--app-head-->');
+await writeFile(adminPath, adminHtml.replace('<!--app-head-->', `<meta http-equiv="Content-Security-Policy" content="${escapeHtml(adminCsp)}" />`));
+
 // El bundle de servidor solo sirve para el build: no se publica.
 await rm(path.join(root, 'dist/server'), { recursive: true, force: true });
 console.log(`Prerender OK: ${path.relative(root, path.join(clientDir, 'index.html'))}${siteUrl ? ' + sitemap.xml' : ' (sin VITE_SITE_URL: sin sitemap ni canonical)'}`);
