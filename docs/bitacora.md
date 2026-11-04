@@ -147,6 +147,7 @@ PRIVAT; los commits del Bloque D se suman a esa misma rama.
 - Auth simulado con el mismo `kid` al reiniciar → la API rechazaba los tokens (caché del JWKS).
 
 **No posible en este entorno**
-- Firefox y WebKit: la descarga está bloqueada por la red; se prueban en el CI.
+- Firefox y WebKit: la descarga está bloqueada por la red de este entorno. **Verificados en GitHub Actions**:
+  la landing pasa 11/11 en Chromium, Firefox y WebKit.
 - Docker: sin demonio; ZAP se ejecutó con la distribución Java, verificada por SHA-256.
 - Día 15 (dominio, SSL y publicación): requiere las cuentas del cliente (P-16).

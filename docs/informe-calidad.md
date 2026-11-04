@@ -84,19 +84,20 @@ está activo con `NODE_ENV=production`, y además se vuelve a comprobar en cada 
 |---|---|
 | Motor de cálculo (`packages/pricing`) | 25/25 |
 | API (unitarias, integración, seguridad, panel) | 80/80 |
-| e2e landing (Chromium, escritorio y móvil) | 11/11 |
+| e2e landing (Chromium, Firefox y WebKit; escritorio y móvil) | 11/11 en cada motor (CI) |
 | e2e panel (Chromium, Auth simulado) | 15/15 |
 | Accesibilidad (axe + teclado) | 15/15 |
 
-El CI (`.github/workflows/ci.yml`) corre todo esto en cada push. El *job* `e2e` se agregó en este bloque
-y se reprodujo localmente con la misma secuencia de pasos.
+El CI (`.github/workflows/ci.yml`) corre todo esto en cada push. **Verificado en GitHub Actions** (corrida
+41932629230): *jobs* `test` y `e2e` en verde. La instalación de los tres navegadores y sus dependencias tarda
+unos 12,5 minutos. **Mejora posible:** cachear los navegadores de Playwright.
 
 ## 5. Criterios de aceptación de la Etapa 1 (plan, sección 8)
 
 | Criterio | Estado |
 |---|---|
 | Landing publicada en el dominio del cliente con HTTPS | ⏳ Requiere las cuentas y el dominio del cliente (P-1, P-16) |
-| Funciona en móvil, tablet y escritorio (Chrome, Safari, Firefox, Edge) | ⚠️ Probado en **Chromium** (escritorio y móvil emulado). **Safari y Firefox no probados**: los motores WebKit y Firefox no están instalados en este entorno. Pendiente para el CI o una revisión manual |
+| Funciona en móvil, tablet y escritorio (Chrome, Safari, Firefox, Edge) | ✅ Landing: 11/11 en **Chromium** (motor de Chrome y Edge), **Firefox** y **WebKit** (motor de Safari), en escritorio y móvil emulado (GitHub Actions, corrida 41932629230). Panel: Chromium. Pendiente: revisión manual en un iPhone real y en una tablet |
 | Lighthouse móvil ≥ 90 y LCP < 2,5 s (móvil) / 1,5 s (escritorio) | ✅ 100/100/100/100; 0,8 s / 0,2 s |
 | El cotizador reproduce al centavo los 3 casos de la planilla | ✅ |
 | El mapa calcula distancia y viático en Uruguay y rechaza puntos fuera | ✅ |
