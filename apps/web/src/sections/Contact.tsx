@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../api';
 import { content, PROPERTY_TYPES } from '../content';
 import { Turnstile } from '../components/Turnstile';
@@ -20,6 +20,10 @@ export function Contact({ selection }: Props) {
   const [resetKey, setResetKey] = useState(0);
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   const [propertyType, setPropertyType] = useState<string>('');
+  // Hasta que React toma el control, el envío queda deshabilitado: así el navegador nunca
+  // envía el formulario por su cuenta (con los datos personales en la URL).
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
 
   // Prefill desde el cotizador ("Congela esta tarifa…").
   const effectiveType = propertyType || selection.propertyTypeCode || '';
@@ -86,6 +90,7 @@ export function Contact({ selection }: Props) {
         </div>
 
         <form
+          method="post"
           className="rounded-lg border border-border bg-surface p-6 md:p-8"
           onSubmit={onSubmit}
           onFocusCapture={() => setEngaged(true)}
@@ -155,7 +160,7 @@ export function Contact({ selection }: Props) {
             )}
           </div>
 
-          <button type="submit" className="btn-primary mt-6 w-full sm:w-auto" disabled={status.kind === 'sending'}>
+          <button type="submit" className="btn-primary mt-6 w-full sm:w-auto" disabled={!hydrated || status.kind === 'sending'}>
             {status.kind === 'sending' ? 'Enviando…' : 'Enviar consulta'}
           </button>
 

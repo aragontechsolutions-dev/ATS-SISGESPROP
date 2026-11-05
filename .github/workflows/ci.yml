@@ -88,3 +88,84 @@ jobs:
           npm run build
           grep -q '<h1' dist/client/index.html
           grep -q 'Content-Security-Policy' dist/client/index.html
+
+  # Pruebas de punta a punta en Chromium: landing, panel (Auth simulado) y accesibilidad.
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    needs: test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ats
+          POSTGRES_PASSWORD: ats_ci_only
+          POSTGRES_DB: ats_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ats -d ats_e2e"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DIRECT_URL: postgresql://ats:ats_ci_only@localhost:5432/ats_e2e
+      DATABASE_URL: postgresql://ats:ats_ci_only@localhost:5432/ats_e2e
+    steps:
+      - name: Checkout (actions/checkout v7.0.1)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Node.js (actions/setup-node v7.1.0)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Instalar dependencias (sin scripts) y navegadores de Playwright (Chromium, Firefox, WebKit)
+        run: |
+          npm ci --ignore-scripts
+          npx --workspace @ats/web playwright install --with-deps chromium firefox webkit
+
+      - name: Base de datos de prueba (migraciones, seed y publicación ficticia)
+        run: |
+          psql "$DIRECT_URL" -v ON_ERROR_STOP=1 -c "CREATE SCHEMA auth; CREATE TABLE auth.users (id uuid PRIMARY KEY, email text);"
+          npm run build -w @ats/pricing
+          cd apps/api
+          npx prisma migrate deploy
+          npx prisma db execute --file prisma/seed.sql
+          npx prisma db execute --file test/fixtures/e2e-publication.sql
+          npm run build
+
+      - name: Levantar Auth simulado y API
+        run: |
+          (cd apps/web && FAKE_AUTH_PORT=54321 nohup node e2e/fake-supabase-auth.mjs > /tmp/fake-auth.log 2>&1 &)
+          # RATE_LIMIT_DISABLED: solo entorno de prueba (el límite se prueba en la API: 429).
+          (cd apps/api && NODE_ENV=development RATE_LIMIT_DISABLED=true SUPABASE_URL=http://127.0.0.1:54321 CORS_ORIGINS=http://127.0.0.1:4173 \
+            IP_HASH_SECRET=ci-e2e-secret-ci-e2e-secret-ci-e2e-1234 TURNSTILE_SECRET_KEY=dummy-ci TRUST_PROXY_HOPS=0 PORT=3000 \
+            nohup node dist/src/main.js > /tmp/api.log 2>&1 &)
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:3000/health && break; sleep 1; done
+
+      - name: Compilar y servir la web
+        working-directory: apps/web
+        env:
+          VITE_API_URL: http://127.0.0.1:3000
+          VITE_SITE_URL: http://127.0.0.1:4173
+          VITE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+          VITE_SUPABASE_URL: http://127.0.0.1:54321
+          VITE_SUPABASE_ANON_KEY: anon-ci
+        run: |
+          npm run build
+          nohup npx vite preview --outDir dist/client --host 127.0.0.1 --port 4173 --strictPort > /tmp/web.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:4173/ > /dev/null && break; sleep 1; done
+
+      - name: e2e landing (3 motores), panel y accesibilidad
+        working-directory: apps/web
+        run: |
+          node e2e/smoke.e2e.mjs
+          BROWSER=firefox node e2e/smoke.e2e.mjs
+          BROWSER=webkit node e2e/smoke.e2e.mjs
+          node e2e/admin.e2e.mjs
+          node e2e/a11y.e2e.mjs
+
+      - name: Logs si falla
+        if: failure()
+        run: tail -n 100 /tmp/api.log /tmp/web.log /tmp/fake-auth.log

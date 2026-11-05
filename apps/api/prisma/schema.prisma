@@ -25,6 +25,8 @@ model AdminProfile {
   fullName  String   @map("full_name")
   role      AdminRole @default(ADMIN)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Acceso revocado. Los administradores no se borran (su historial de auditoría es inmutable): se desactivan.
+  disabledAt DateTime? @map("disabled_at") @db.Timestamptz(6)
 
   contentBlocks ContentBlock[]
   mediaAssets   MediaAsset[]
@@ -38,7 +40,8 @@ model AdminProfile {
 model AuditLog {
   id         BigInt   @id @default(autoincrement())
   actorId    String?  @map("actor_id") @db.Uuid
-  actor      AdminProfile? @relation(fields: [actorId], references: [id])
+  /// NoAction: un administrador con historial no se puede borrar (se desactiva).
+  actor      AdminProfile? @relation(fields: [actorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   action     String
   entity     String
   entityId   String   @map("entity_id")

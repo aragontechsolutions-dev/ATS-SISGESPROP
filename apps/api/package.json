@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "API NestJS: cotizador, viáticos, contenidos y consultas (Etapa 1)",
+  "description": "PRIVAT – API NestJS: cotizador, viáticos, contenidos y consultas (Etapa 1)",
   "engines": {
     "node": ">=24.22.1 <25"
   },

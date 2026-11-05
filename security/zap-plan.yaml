@@ -1,0 +1,89 @@
+# Plan de OWASP ZAP (Automation Framework, ZAP 2.17.0) para el entorno de PRUEBA.
+# Escanea la landing (vite preview) y la API, incluido el panel con un token aal2.
+#
+# Variables de entorno (nunca escribir el token en este archivo):
+#   ZAP_WEB_URL      p. ej. http://127.0.0.1:4173
+#   ZAP_API_URL      p. ej. http://127.0.0.1:3000
+#   ZAP_ADMIN_TOKEN  access token aal2 de un administrador de PRUEBA
+#   ZAP_OUT_DIR      carpeta de los reportes
+# La API debe correr con NODE_ENV=development y RATE_LIMIT_DISABLED=true (ver docs/seguridad.md)
+# para que el límite de peticiones no bloquee el escaneo. NUNCA contra producción.
+env:
+  contexts:
+    - name: privat
+      urls:
+        - ${ZAP_WEB_URL}/
+        - ${ZAP_API_URL}/
+      includePaths:
+        - ${ZAP_WEB_URL}.*
+        - ${ZAP_API_URL}.*
+  parameters:
+    failOnError: true
+    failOnWarning: false
+    progressToStdout: true
+jobs:
+  - type: replacer
+    rules:
+      - description: Token de administrador para el panel
+        url: ${ZAP_API_URL}/admin.*
+        matchType: req_header
+        matchString: Authorization
+        matchRegex: false
+        replacementString: Bearer ${ZAP_ADMIN_TOKEN}
+  - type: spider
+    parameters:
+      context: privat
+      url: ${ZAP_WEB_URL}/
+      maxDuration: 2
+  - type: requestor
+    requests:
+      - url: ${ZAP_WEB_URL}/admin/
+      - url: ${ZAP_API_URL}/health
+      - url: ${ZAP_API_URL}/public/coverage
+      - url: ${ZAP_API_URL}/public/content
+      - url: ${ZAP_API_URL}/public/simulations
+        method: POST
+        headers: ["Content-Type: application/json"]
+        data: '{"propertyTypeCode":"CASA_PREMIUM","serviceLevel":3,"lat":-34.9,"lng":-54.95}'
+      - url: ${ZAP_API_URL}/public/travel-estimate
+        method: POST
+        headers: ["Content-Type: application/json"]
+        data: '{"lat":-34.9,"lng":-54.95}'
+      - url: ${ZAP_API_URL}/public/leads
+        method: POST
+        headers: ["Content-Type: application/json"]
+        data: '{"name":"Zap Test","email":"zap@example.com","consent":true,"policyVersion":"provisoria-0","turnstileToken":"zap","message":"hola"}'
+      - url: ${ZAP_API_URL}/admin/me
+      - url: ${ZAP_API_URL}/admin/content
+      - url: ${ZAP_API_URL}/admin/content/sections/brand
+        method: PUT
+        headers: ["Content-Type: application/json"]
+        data: '{"value":{"name":"PRIVAT"}}'
+      - url: ${ZAP_API_URL}/admin/pricing
+      - url: ${ZAP_API_URL}/admin/pricing/test-simulation
+        method: POST
+        headers: ["Content-Type: application/json"]
+        data: '{"propertyTypeCode":"CASA_PREMIUM","serviceLevel":3,"lat":-34.9,"lng":-54.95}'
+      - url: ${ZAP_API_URL}/admin/leads?status=NUEVA&page=1
+      - url: ${ZAP_API_URL}/admin/leads/export.csv
+      - url: ${ZAP_API_URL}/admin/audit?page=1
+      - url: ${ZAP_API_URL}/admin/publications
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+  - type: activeScan
+    parameters:
+      context: privat
+      maxRuleDurationInMins: 3
+      maxScanDurationInMins: 25
+      threadPerHost: 4
+  - type: report
+    parameters:
+      template: traditional-json
+      reportDir: ${ZAP_OUT_DIR}
+      reportFile: zap-report
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: ${ZAP_OUT_DIR}
+      reportFile: zap-report

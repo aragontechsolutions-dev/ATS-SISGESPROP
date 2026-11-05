@@ -38,8 +38,14 @@ BEGIN
 END $$;
 
 -- Tabla interna de Prisma (historial de migraciones): también cerrada.
-ALTER TABLE public._prisma_migrations ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public._prisma_migrations FROM anon, authenticated;
+-- Condicional: no existe en la base auxiliar (shadow) que usa `prisma migrate diff/dev`.
+DO $$
+BEGIN
+  IF to_regclass('public._prisma_migrations') IS NOT NULL THEN
+    ALTER TABLE public._prisma_migrations ENABLE ROW LEVEL SECURITY;
+    REVOKE ALL ON TABLE public._prisma_migrations FROM anon, authenticated;
+  END IF;
+END $$;
 
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA public FROM anon, authenticated;

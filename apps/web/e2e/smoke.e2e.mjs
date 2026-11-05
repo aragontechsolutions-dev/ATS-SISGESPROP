@@ -9,7 +9,11 @@ import assert from 'node:assert/strict';
 
 const require = createRequire(import.meta.url);
 const playwright = require(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
-const { chromium, devices } = playwright;
+const { devices } = playwright;
+// Motor: chromium (por defecto), firefox o webkit (motor de Safari). En el CI se prueban los tres.
+const BROWSER = process.env.BROWSER ?? 'chromium';
+const engine = playwright[BROWSER];
+if (!engine) throw new Error(`BROWSER inválido: ${BROWSER}`);
 
 const WEB_URL = process.env.WEB_URL ?? 'http://127.0.0.1:4173';
 const SHOTS_DIR = process.env.SHOTS_DIR;
@@ -32,7 +36,8 @@ async function step(name, fn) {
   }
 }
 
-const browser = await chromium.launch();
+const browser = await engine.launch();
+console.log(`Motor: ${BROWSER}`);
 try {
   // ---------------- Escritorio ----------------
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, deviceScaleFactor: SHOTS_DIR ? 2 : 1 });
@@ -57,6 +62,11 @@ try {
     await page.waitForLoadState('networkidle');
     assert.ok(!requested.some((u) => u.includes('MapView')), 'se pidió el chunk del mapa antes de tiempo');
     assert.ok(!requested.some((u) => u.includes('challenges.cloudflare.com')), 'Turnstile se cargó antes de tiempo');
+  });
+
+  await step('marca PRIVAT en el título y el encabezado', async () => {
+    assert.match(await page.title(), /\| PRIVAT$/);
+    await page.locator('header').getByRole('link', { name: /PRIVAT/ }).waitFor();
   });
 
   await step('banner de contenido provisorio y "Acceso clientes" deshabilitado', async () => {
@@ -131,6 +141,24 @@ try {
     await page.getByText('No pudimos verificar que la consulta la envía una persona').waitFor();
   });
 
+  await step('la CSP efectiva bloquea scripts inline y estilos inline inyectados', async () => {
+    const r = await page.evaluate(() => {
+      window.__cspScript = false;
+      const sc = document.createElement('script');
+      sc.textContent = 'window.__cspScript = true;';
+      document.head.appendChild(sc);
+      const probe = document.createElement('div');
+      probe.setAttribute('style', 'width: 123px');
+      document.body.appendChild(probe);
+      const width = probe.style.width;
+      probe.remove();
+      return { script: window.__cspScript, styleAttr: width };
+    });
+    assert.equal(r.script, false, 'se ejecutó un script inline');
+    assert.equal(r.styleAttr, '', 'se aplicó un atributo style inline');
+    consoleErrors.splice(0); // las violaciones provocadas por esta prueba no cuentan
+  });
+
   await step('sin errores de consola (salvo teselas de mapa bloqueadas por red)', async () => {
     const relevant = consoleErrors.filter((e) => !/tile\.openstreetmap|ERR_|Failed to load resource/.test(e));
     assert.deepEqual(relevant, []);
@@ -138,7 +166,9 @@ try {
   await ctx.close();
 
   // ---------------- Móvil ----------------
-  const mctx = await browser.newContext({ ...devices['iPhone 13'] });
+  // Firefox no admite isMobile: se emula solo el tamaño y el agente del teléfono.
+  const { isMobile, hasTouch, ...phone } = devices['iPhone 13'];
+  const mctx = await browser.newContext(BROWSER === 'firefox' ? phone : { ...phone, isMobile, hasTouch });
   const m = await mctx.newPage();
   await step('móvil: sin scroll horizontal y menú accesible', async () => {
     await m.goto(WEB_URL, { waitUntil: 'networkidle' });

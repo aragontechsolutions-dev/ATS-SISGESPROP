@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { readFileSync } from 'node:fs';
 import { Test } from '@nestjs/testing';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type JWK } from 'jose';
@@ -9,6 +10,13 @@ import { TOKEN_VERIFIER, TokenVerifier } from '../src/auth/token-verifier.ts';
 import { PrismaService } from '../src/prisma/prisma.service.ts';
 import { CAPTCHA_VERIFIER, type CaptchaVerifier } from '../src/leads/turnstile.verifier.ts';
 import { LEAD_NOTIFIER, type LeadNotifier, type NewLeadNotice } from '../src/leads/lead-notifier.ts';
+import { DEPLOY_TRIGGER, type DeployResult, type DeployTrigger } from '../src/admin/publish/deploy-trigger.ts';
+
+/** Disparador de despliegue simulado: cuenta las llamadas. */
+export function recordingDeploy(result: DeployResult = 'disparado'): DeployTrigger & { calls: number } {
+  const d = { calls: 0, trigger: async () => ((d.calls += 1), result) };
+  return d;
+}
 
 /** Anti-spam simulado: solo el token "ok" es válido. */
 export const fakeCaptcha: CaptchaVerifier = { verify: async (token) => token === 'ok' };
@@ -24,6 +32,12 @@ export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 
 export const ISSUER = 'https://test-project.supabase.co/auth/v1';
 
+/**
+ * Administrador de prueba compartido por todos los archivos de prueba. Es fijo porque
+ * los administradores no se borran (auditoría inmutable) y el email es único.
+ */
+export const TEST_ADMIN_ID = '00000000-0000-4000-8000-0000000000aa';
+
 export function testConfig(overrides: Partial<AppConfig> = {}): AppConfig {
   return {
     nodeEnv: 'test',
@@ -35,6 +49,7 @@ export function testConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     trustProxyHops: 0,
     turnstileSecretKey: 'test-turnstile-secret',
     turnstileAllowedHostnames: [],
+    vercelDeployHookUrl: null,
     ...overrides,
   };
 }
@@ -66,6 +81,7 @@ export async function createApp(
   verifier: TokenVerifier,
   config = testConfig(),
   notifier: LeadNotifier = recordingNotifier(),
+  deploy: DeployTrigger = recordingDeploy('no-configurado'),
 ) {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(APP_CONFIG)
@@ -76,6 +92,8 @@ export async function createApp(
     .useValue(fakeCaptcha)
     .overrideProvider(LEAD_NOTIFIER)
     .useValue(notifier)
+    .overrideProvider(DEPLOY_TRIGGER)
+    .useValue(deploy)
     .compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({ bodyParser: false, logger: false });
   configureApp(app, config);
@@ -91,7 +109,11 @@ export async function createApp(
  */
 export async function resetData(prisma: PrismaService): Promise<void> {
   await prisma.$executeRaw`TRUNCATE consent_record, lead, simulation, publication`;
-  await prisma.$executeRaw`DELETE FROM admin_profile`;
+  // Borradores del panel (los vuelve a cargar cada prueba que los necesite).
+  await prisma.$executeRaw`TRUNCATE content_block, faq, testimonial, calc_profile, travel_tier, travel_config`;
+  await prisma.$executeRaw`DELETE FROM pricing_param`;
+  await prisma.$executeRaw`INSERT INTO pricing_param (id, key, value) VALUES (gen_random_uuid(), 'TERRITORY_TOLERANCE_KM', 2)`;
+  // admin_profile NO se borra: su historial de auditoría es inmutable (ver migración admin_disable).
 }
 
 /** Crea un administrador (y su auth.users si existe el esquema de Supabase). */
@@ -100,5 +122,17 @@ export async function insertAdmin(prisma: PrismaService, id: string, email = 'ad
   if (hasAuth[0]?.exists) {
     await prisma.$executeRaw`INSERT INTO auth.users (id, email) VALUES (${id}::uuid, ${email}) ON CONFLICT (id) DO NOTHING`;
   }
-  await prisma.adminProfile.create({ data: { id, email, fullName: 'Admin Test' } });
+  await prisma.adminProfile.upsert({
+    where: { id },
+    create: { id, email, fullName: 'Admin Test' },
+    update: { disabledAt: null },
+  });
+}
+
+/** Valores de contenido del seed (prisma/seed.sql): así la prueba también valida el seed. */
+export function seedContentSections(): Record<string, unknown> {
+  const sql = readFileSync(new URL('../../prisma/seed.sql', import.meta.url), 'utf8');
+  const out: Record<string, unknown> = {};
+  for (const m of sql.matchAll(/'([a-z]+)', 'main', '(.*?)'::jsonb/g)) out[m[1]!] = JSON.parse(m[2]!);
+  return out;
 }

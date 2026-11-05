@@ -1,7 +1,11 @@
-# ATS-SISGESPROP – Sistema de gestión de propiedades (Uruguay)
+# PRIVAT – Sistema de gestión de propiedades (Uruguay)
 
-Plataforma de *Property Management* técnico para Maldonado, Punta del Este y Rocha.
-Desarrollada por Aragon Tech Solutions por etapas. **Etapa actual: 1** (landing, mapa de
+Plataforma de *Property Management* técnico de **PRIVAT** para Maldonado, Punta del Este y Rocha
+(cobertura en todo Uruguay). Desarrollada por Aragon Tech Solutions por etapas.
+
+> **Repositorio de trabajo:** `aragontechsolutions-dev/ATS-SISGESPROP` (Aragon Tech Solutions).
+> Cuando PRIVAT tenga su propio repositorio, el código se traspasa siguiendo
+> [la guía de traspaso](docs/guia-tecnica.md#10-traspaso-al-repositorio-del-cliente). **Etapa actual: 1** (landing, mapa de
 cobertura, cotizador y panel admin), según el documento *Plan de desarrollo – Etapa 1*.
 
 ## Estado de la Etapa 1
@@ -11,8 +15,8 @@ cobertura, cotizador y panel admin), según el documento *Plan de desarrollo –
 | A. Base técnica: monorepo, API NestJS, seguridad, modelo de datos | 1–3 | ✅ Código y pruebas listos. Falta crear las cuentas del cliente (Supabase, Render, Vercel: P-16) |
 | B. Motor de cálculo + viático (**Hito 1**) | 4 | ✅ Reproduce al centavo los 3 casos de la planilla |
 | C. Landing, mapa, cotizador y formulario (**Hito 2**) | 5–9 | ✅ Con contenido provisorio. Falta el proveedor de email y el contenido del cliente |
-| D. Panel admin | 10–13 | ⏳ Pendiente |
-| E. Calidad y entrega | 14–15 | ⏳ Pendiente |
+| D. Panel admin (**Hito 3**) | 10–13 | ✅ API + panel con 2FA, publicar/restaurar, consultas y auditoría. ⏳ Falta la subida de imágenes (D4) |
+| E. Calidad y entrega | 14–15 | ✅ Día 14: Lighthouse 100×4, WCAG sin violaciones, ZAP sin altos, e2e en el CI. ⏳ Día 15: publicación en producción (requiere las cuentas del cliente) |
 
 ## Estructura
 
@@ -39,6 +43,8 @@ despliegue) está en [docs/guia-tecnica.md](docs/guia-tecnica.md).
 
 ## Documentación
 
+- [Manual del panel (para el equipo de PRIVAT)](docs/manual-panel.md)
+- [Informe de calidad y criterios de aceptación](docs/informe-calidad.md)
 - [Guía técnica](docs/guia-tecnica.md)
 - [Seguridad](docs/seguridad.md)
 - [Decisiones de arquitectura (ADR)](docs/adr/README.md)

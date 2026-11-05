@@ -14,9 +14,19 @@ export interface AppConfig {
   turnstileSecretKey: string;
   /** Dominios desde los que se acepta un token de Turnstile (vacío = no se valida el hostname). */
   turnstileAllowedHostnames: string[];
+  /** Deploy hook de Vercel: "Publicar" dispara la recompilación de la web. Opcional. */
+  vercelDeployHookUrl: string | null;
 }
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
+
+/**
+ * Desactiva el límite de peticiones SOLO fuera de producción (escaneos OWASP ZAP en un
+ * entorno de prueba). En producción loadConfig se niega a arrancar si está activo.
+ */
+export function isRateLimitDisabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.RATE_LIMIT_DISABLED === 'true' && env.NODE_ENV !== 'production';
+}
 
 function required(env: NodeJS.ProcessEnv, name: string): string {
   const value = env[name]?.trim();
@@ -43,6 +53,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error('NODE_ENV debe ser development, test o production');
   }
   const prod = nodeEnv === 'production';
+  if (prod && env.RATE_LIMIT_DISABLED === 'true') {
+    throw new Error('RATE_LIMIT_DISABLED no está permitido en producción');
+  }
 
   const port = Number(env.PORT ?? 3000);
   if (!Number.isInteger(port) || port <= 0 || port > 65535) throw new Error('PORT inválido');
@@ -78,6 +91,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error('TURNSTILE_ALLOWED_HOSTNAMES es obligatorio en producción');
   }
 
+  const hook = env.VERCEL_DEPLOY_HOOK_URL?.trim() || null;
+  if (hook) parseUrl('VERCEL_DEPLOY_HOOK_URL', hook, true, true);
+
   return {
     nodeEnv,
     port,
@@ -88,5 +104,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     trustProxyHops,
     turnstileSecretKey: required(env, 'TURNSTILE_SECRET_KEY'),
     turnstileAllowedHostnames,
+    vercelDeployHookUrl: hook,
   };
 }

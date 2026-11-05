@@ -10,6 +10,7 @@ import {
   recordingNotifier,
   resetData,
   testConfig,
+  TEST_ADMIN_ID,
 } from './helpers.ts';
 
 /** IP distinta por petición (detrás de un proxy) para no chocar con los límites por IP. */
@@ -45,7 +46,7 @@ const validLead = {
 describe('Endpoints públicos – cobertura y consultas', { skip }, () => {
   let ctx: Awaited<ReturnType<typeof createApp>>;
   const notifier = recordingNotifier();
-  const adminId = randomUUID();
+  const adminId = TEST_ADMIN_ID;
 
   const post = (path: string, body: unknown) =>
     fetch(`${ctx.baseUrl}${path}`, {

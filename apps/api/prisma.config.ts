@@ -13,5 +13,7 @@ export default defineConfig({
   },
   datasource: {
     url: process.env.DIRECT_URL,
+    // Solo desarrollo: base vacía y descartable para `prisma migrate diff --from-migrations`.
+    shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL,
   },
 });

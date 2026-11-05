@@ -10,3 +10,4 @@ packages/*/coverage/
 .DS_Store
 apps/api/src/generated/
 dist-test/
+apps/web/src/generated/

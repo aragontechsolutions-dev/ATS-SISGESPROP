@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { APP_CONFIG, loadConfig, type AppConfig } from './config/app-config.ts';
+import { APP_CONFIG, isRateLimitDisabled, loadConfig, type AppConfig } from './config/app-config.ts';
 import { PrismaService } from './prisma/prisma.service.ts';
 import { AuthGuard } from './auth/auth.guard.ts';
 import { TOKEN_VERIFIER, TokenVerifier } from './auth/token-verifier.ts';
@@ -15,13 +15,40 @@ import { LeadsService } from './leads/leads.service.ts';
 import { CAPTCHA_VERIFIER, TurnstileVerifier } from './leads/turnstile.verifier.ts';
 import { LEAD_NOTIFIER, LogLeadNotifier } from './leads/lead-notifier.ts';
 import { MeController } from './admin/me.controller.ts';
+import { PublicContentController } from './publication/content.controller.ts';
+import { DraftsService } from './admin/drafts.service.ts';
+import { AdminContentController } from './admin/content/content.controller.ts';
+import { AdminPricingController } from './admin/pricing/pricing.controller.ts';
+import { AdminPublishController } from './admin/publish/publish.controller.ts';
+import { DEPLOY_TRIGGER, VercelDeployTrigger } from './admin/publish/deploy-trigger.ts';
+import { AdminLeadsController } from './admin/leads/leads-admin.controller.ts';
+import { AdminAuditController } from './admin/audit.controller.ts';
 
 @Module({
   imports: [
     // Límite global por IP: 60 peticiones por minuto (rutas concretas pueden ser más estrictas).
-    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 60 }]),
+    // RATE_LIMIT_DISABLED solo existe para escaneos de seguridad en entornos de prueba:
+    // loadConfig impide arrancar con él en producción y aquí se vuelve a comprobar.
+    ThrottlerModule.forRoot({
+      throttlers: [{ name: 'default', ttl: 60_000, limit: 60 }],
+      skipIf: () => isRateLimitDisabled(),
+    }),
   ],
-  controllers: [HealthController, SimulationController, CoverageController, LeadsController, MeController],
+  controllers: [
+    // Públicos
+    HealthController,
+    SimulationController,
+    CoverageController,
+    PublicContentController,
+    LeadsController,
+    // Panel (administrador con 2FA)
+    MeController,
+    AdminContentController,
+    AdminPricingController,
+    AdminPublishController,
+    AdminLeadsController,
+    AdminAuditController,
+  ],
   providers: [
     { provide: APP_CONFIG, useFactory: () => loadConfig() },
     {
@@ -36,6 +63,12 @@ import { MeController } from './admin/me.controller.ts';
       inject: [APP_CONFIG],
     },
     { provide: LEAD_NOTIFIER, useClass: LogLeadNotifier },
+    {
+      provide: DEPLOY_TRIGGER,
+      useFactory: (config: AppConfig) => new VercelDeployTrigger(config.vercelDeployHookUrl),
+      inject: [APP_CONFIG],
+    },
+    DraftsService,
     PrismaService,
     PublicationService,
     SimulationService,

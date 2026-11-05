@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { generateKeyPair, SignJWT } from 'jose';
 import { computeFee, computeTravel } from '@ats/pricing';
-import { TEST_DATABASE_URL, createApp, createKeys, insertAdmin, resetData, signToken } from './helpers.ts';
+import { TEST_ADMIN_ID, TEST_DATABASE_URL, createApp, createKeys, insertAdmin, resetData, signToken
+} from './helpers.ts';
 
 /**
  * Pruebas de integración contra PostgreSQL real con las migraciones aplicadas.
@@ -27,7 +28,7 @@ const TRAVEL = {
 describe('API – integración', { skip }, () => {
   let ctx: Awaited<ReturnType<typeof createApp>>;
   let keys: Awaited<ReturnType<typeof createKeys>>;
-  const adminId = randomUUID();
+  const adminId = TEST_ADMIN_ID;
 
   const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
     fetch(`${ctx.baseUrl}${path}`, {
@@ -189,6 +190,16 @@ describe('API – integración', { skip }, () => {
 
     it('403 si el usuario no tiene perfil de administrador', async () => {
       assert.equal((await get(await signToken(keys.privateKey, { sub: randomUUID() }))).status, 403);
+    });
+
+    it('403 si el administrador está desactivado (acceso revocado)', async () => {
+      await ctx.prisma.adminProfile.update({ where: { id: adminId }, data: { disabledAt: new Date() } });
+      assert.equal((await get(await signToken(keys.privateKey, { sub: adminId }))).status, 403);
+    });
+
+    it('un administrador con historial de auditoría no se puede borrar', async () => {
+      await ctx.prisma.auditLog.create({ data: { actorId: adminId, action: 'TEST', entity: 'test', entityId: '1' } });
+      await assert.rejects(ctx.prisma.adminProfile.delete({ where: { id: adminId } }));
     });
 
     it('200 con token válido, 2FA y perfil de administrador', async () => {
