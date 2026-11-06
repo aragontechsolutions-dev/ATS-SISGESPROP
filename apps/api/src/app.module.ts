@@ -14,6 +14,7 @@ import { LeadsController } from './leads/leads.controller.ts';
 import { LeadsService } from './leads/leads.service.ts';
 import { CAPTCHA_VERIFIER, TurnstileVerifier } from './leads/turnstile.verifier.ts';
 import { LEAD_NOTIFIER, LogLeadNotifier } from './leads/lead-notifier.ts';
+import { ResendLeadNotifier } from './leads/resend-notifier.ts';
 import { MeController } from './admin/me.controller.ts';
 import { PublicContentController } from './publication/content.controller.ts';
 import { DraftsService } from './admin/drafts.service.ts';
@@ -62,7 +63,12 @@ import { AdminAuditController } from './admin/audit.controller.ts';
         new TurnstileVerifier(config.turnstileSecretKey, config.turnstileAllowedHostnames),
       inject: [APP_CONFIG],
     },
-    { provide: LEAD_NOTIFIER, useClass: LogLeadNotifier },
+    {
+      // Resend si está configurado (obligatorio en producción); si no, solo log.
+      provide: LEAD_NOTIFIER,
+      useFactory: (config: AppConfig) => (config.resend ? new ResendLeadNotifier(config.resend) : new LogLeadNotifier()),
+      inject: [APP_CONFIG],
+    },
     {
       provide: DEPLOY_TRIGGER,
       useFactory: (config: AppConfig) => new VercelDeployTrigger(config.vercelDeployHookUrl),

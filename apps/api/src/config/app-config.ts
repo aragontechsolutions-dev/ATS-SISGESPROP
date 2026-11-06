@@ -16,6 +16,32 @@ export interface AppConfig {
   turnstileAllowedHostnames: string[];
   /** Deploy hook de Vercel: "Publicar" dispara la recompilación de la web. Opcional. */
   vercelDeployHookUrl: string | null;
+  /** Aviso de consultas por email con Resend. Obligatorio en producción; null = solo log. */
+  resend: { apiKey: string; from: string; to: string[]; panelUrl: string } | null;
+}
+
+const EMAIL_RE = /^[^\s@<>"',]{1,64}@[^\s@<>"',]{1,190}\.[a-z]{2,}$/i;
+/** Remitente: "correo@dominio" o "Nombre <correo@dominio>". */
+const FROM_RE = /^(?:[^<>"\r\n]{1,60} <[^\s@<>"',]{1,64}@[^\s@<>"',]{1,190}\.[a-z]{2,}>|[^\s@<>"',]{1,64}@[^\s@<>"',]{1,190}\.[a-z]{2,})$/i;
+
+function loadResend(env: NodeJS.ProcessEnv, prod: boolean): AppConfig['resend'] {
+  const names = ['RESEND_API_KEY', 'LEAD_NOTIFY_FROM', 'LEAD_NOTIFY_TO', 'PANEL_URL'] as const;
+  const defined = names.filter((n) => env[n]?.trim());
+  if (defined.length === 0) {
+    if (prod) throw new Error('En producción el aviso por email es obligatorio: defina RESEND_API_KEY, LEAD_NOTIFY_FROM, LEAD_NOTIFY_TO y PANEL_URL');
+    return null;
+  }
+  const missing = names.filter((n) => !env[n]?.trim());
+  if (missing.length) throw new Error(`Configuración de Resend incompleta, faltan: ${missing.join(', ')}`);
+
+  const from = env.LEAD_NOTIFY_FROM!.trim();
+  if (!FROM_RE.test(from)) throw new Error('LEAD_NOTIFY_FROM inválido (ej.: PRIVAT <avisos@privatgp.com>)');
+  const to = env.LEAD_NOTIFY_TO!.split(',').map((e) => e.trim()).filter(Boolean);
+  if (to.length === 0 || to.length > 10 || !to.every((e) => EMAIL_RE.test(e))) {
+    throw new Error('LEAD_NOTIFY_TO inválido: de 1 a 10 emails separados por coma');
+  }
+  const panelUrl = parseUrl('PANEL_URL', env.PANEL_URL!.trim(), true, prod).toString();
+  return { apiKey: env.RESEND_API_KEY!.trim(), from, to, panelUrl };
 }
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
@@ -105,5 +131,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     turnstileSecretKey: required(env, 'TURNSTILE_SECRET_KEY'),
     turnstileAllowedHostnames,
     vercelDeployHookUrl: hook,
+    resend: loadResend(env, prod),
   };
 }

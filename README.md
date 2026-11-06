@@ -46,6 +46,7 @@ despliegue) está en [docs/guia-tecnica.md](docs/guia-tecnica.md).
 - [Manual del panel (para el equipo de PRIVAT)](docs/manual-panel.md)
 - [Informe de calidad y criterios de aceptación](docs/informe-calidad.md)
 - [Guía técnica](docs/guia-tecnica.md)
+- [Guía del primer despliegue (Supabase, Resend, Turnstile, Render, Vercel)](docs/despliegue.md)
 - [Seguridad](docs/seguridad.md)
 - [Decisiones de arquitectura (ADR)](docs/adr/README.md)
 - [Pendientes del cliente y dudas abiertas](docs/pendientes.md)

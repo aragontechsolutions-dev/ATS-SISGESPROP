@@ -10,13 +10,13 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 | ★ P-3 | Regla del viático: ¿USD 0,35/km? ¿radio sin cargo? ¿tramos? Si son tramos: ¿monto por visita o por mes? | Modo por km con valores iniciales del plan (0 km de radio, 0,35 USD/km); modo por tramos bloqueado |
 | ★ P-5 | Valores de los 15 perfiles (5 tipos × 3 niveles) | Sin perfiles, el cotizador responde 404 para esa combinación |
 | P-4 | 3 o 4 trayectos reales con km por carretera | El factor de ruta queda en 1,3 (propuesto, sin calibrar) |
-| ★ P-16 | Cuentas a nombre del cliente: dominio, Vercel, Render (plan pago), Supabase, Cloudflare | No se puede desplegar ni probar contra Supabase real |
+| ★ P-16 | Cuentas a nombre del cliente. **Recibidas (06/11/2026):** dominio privatgp.com, GitHub, Render, Vercel, Supabase y Resend. **Faltan:** Cloudflare (Turnstile), proveedor DNS del dominio, plan de Render y emails que reciben los avisos | Despliegue según [despliegue.md](despliegue.md) |
 
 ## Necesarios para los próximos bloques
 
 | Ref. | Dato | Bloque |
 |---|---|---|
-| ★ P-1 | ~~Nombre comercial~~ → **PRIVAT** (confirmado 04/11/2026). Faltan: logo vectorial y dominio | C (landing) |
+| ★ P-1 | ~~Nombre comercial~~ → **PRIVAT** (confirmado 04/11/2026). ~~Dominio~~ → **privatgp.com** (06/11/2026). Falta: logo vectorial | C (landing) |
 | ★ P-13 / P-13b | Textos de la landing; fotos con derecho de uso (1 hero + 3 servicios) | C |
 | P-13c | Testimonios reales autorizados (si no hay, la sección se oculta) | C |
 | ★ P-14 | Teléfono, WhatsApp, email de consultas, dirección, redes | C |
@@ -45,7 +45,6 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 - **Textos de la landing:** son provisorios, tomados del Documento Maestro y adaptados por el desarrollo
   en Transparencia, Cobertura y Contacto. El "límite de gasto" se redactó sin cifra (el documento dice
   "ej. USD 500").
-- **Proveedor de email transaccional** para el aviso de consultas: hoy solo se registra en el log.
 - **Tipografía:** se usa la del sistema (cero descargas) hasta definir la identidad visual del logo (P-1).
 - **Marca sin logo:** "PRIVAT" se muestra como texto con espaciado amplio y el favicon es genérico hasta recibir el logo vectorial.
 - **Hero:** fondo verde con líneas arquitectónicas en SVG hasta tener la fotografía (P-13b).

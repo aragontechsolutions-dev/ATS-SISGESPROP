@@ -6,6 +6,7 @@ import { parsePricingSnapshot } from '../src/simulation/pricing-snapshot.ts';
 import { isWithinTerritory } from '@ats/pricing';
 import { DEFAULT_TERRITORY_TOLERANCE_KM, URUGUAY_GEOMETRY } from '../src/geo/uruguay.ts';
 import { TurnstileVerifier } from '../src/leads/turnstile.verifier.ts';
+import { ResendLeadNotifier } from '../src/leads/resend-notifier.ts';
 
 const baseEnv = {
   NODE_ENV: 'production',
@@ -15,6 +16,10 @@ const baseEnv = {
   IP_HASH_SECRET: 'x'.repeat(32),
   TURNSTILE_SECRET_KEY: 'secret',
   TURNSTILE_ALLOWED_HOSTNAMES: 'www.cliente.com.uy, cliente.com.uy',
+  RESEND_API_KEY: 're_test_key',
+  LEAD_NOTIFY_FROM: 'PRIVAT <avisos@privatgp.com>',
+  LEAD_NOTIFY_TO: 'equipo@privatgp.com, otra@privatgp.com',
+  PANEL_URL: 'https://privatgp.com/admin/',
 };
 
 describe('loadConfig', () => {
@@ -43,6 +48,17 @@ describe('loadConfig', () => {
     assert.equal(isRateLimitDisabled({ NODE_ENV: 'production', RATE_LIMIT_DISABLED: 'true' }), false);
     assert.equal(isRateLimitDisabled({ NODE_ENV: 'development', RATE_LIMIT_DISABLED: 'true' }), true);
     assert.equal(isRateLimitDisabled({ NODE_ENV: 'development' }), false);
+  });
+  it('Resend: obligatorio en producción, completo y con formatos válidos', () => {
+    const c = loadConfig(baseEnv);
+    assert.deepEqual(c.resend?.to, ['equipo@privatgp.com', 'otra@privatgp.com']);
+    const none = { ...baseEnv, RESEND_API_KEY: '', LEAD_NOTIFY_FROM: '', LEAD_NOTIFY_TO: '', PANEL_URL: '' };
+    assert.throws(() => loadConfig(none), /aviso por email es obligatorio/);
+    assert.equal(loadConfig({ ...none, NODE_ENV: 'development' }).resend, null);
+    assert.throws(() => loadConfig({ ...baseEnv, PANEL_URL: '' }), /faltan: PANEL_URL/);
+    assert.throws(() => loadConfig({ ...baseEnv, LEAD_NOTIFY_FROM: 'no es un email' }), /LEAD_NOTIFY_FROM/);
+    assert.throws(() => loadConfig({ ...baseEnv, LEAD_NOTIFY_TO: 'a@b.uy, malo' }), /LEAD_NOTIFY_TO/);
+    assert.throws(() => loadConfig({ ...baseEnv, PANEL_URL: 'http://privatgp.com/admin/' }), /https/);
   });
   it('exige un secreto de hash de IP largo', () => {
     assert.throws(() => loadConfig({ ...baseEnv, IP_HASH_SECRET: 'corto' }), /32/);
@@ -136,5 +152,35 @@ describe('TurnstileVerifier (verificación en el servidor)', () => {
       throw new Error('red caída');
     });
     assert.equal(await new TurnstileVerifier('s', [], broken.fn).verify('t', undefined), false);
+  });
+});
+
+describe('ResendLeadNotifier (aviso por email)', () => {
+  const config = { apiKey: 're_secret', from: 'PRIVAT <avisos@privatgp.com>', to: ['equipo@privatgp.com'], panelUrl: 'https://privatgp.com/admin/' };
+  function capture(status = 200) {
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    const fn = (async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      return new Response(JSON.stringify({ id: 'email_1' }), { status });
+    }) as unknown as typeof fetch;
+    return { fn, calls };
+  }
+
+  it('llama a la API de Resend con Bearer, idempotencia y sin datos del visitante', async () => {
+    const f = capture();
+    await new ResendLeadNotifier(config, f.fn).notifyNewLead({ leadId: 'abc-123', createdAt: new Date('2026-11-06T15:00:00Z') });
+    assert.equal(f.calls[0]?.url, 'https://api.resend.com/emails');
+    const h = f.calls[0]?.init.headers as Record<string, string>;
+    assert.equal(h.Authorization, 'Bearer re_secret');
+    assert.equal(h['Idempotency-Key'], 'lead-abc-123');
+    const body = JSON.parse(String(f.calls[0]?.init.body)) as Record<string, unknown>;
+    assert.equal(body.from, 'PRIVAT <avisos@privatgp.com>');
+    assert.deepEqual(body.to, ['equipo@privatgp.com']);
+    assert.match(String(body.text), /https:\/\/privatgp\.com\/admin\//);
+    assert.match(String(body.text), /12:00/); // 15:00 UTC = 12:00 en Uruguay
+  });
+
+  it('falla si Resend responde error (LeadsService lo captura y la consulta igual se guarda)', async () => {
+    await assert.rejects(new ResendLeadNotifier(config, capture(422).fn).notifyNewLead({ leadId: 'x', createdAt: new Date() }), /Resend HTTP 422/);
   });
 });
