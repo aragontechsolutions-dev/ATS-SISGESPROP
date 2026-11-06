@@ -186,3 +186,6 @@ PRIVAT; los commits del Bloque D se suman a esa misma rama.
 
 **Pendiente:** el despliegue real con las cuentas del cliente (requiere Cloudflare, DNS y los
 emails de destino).
+- Corrección en [despliegue.md](despliegue.md) (paso 1): al clonar solo se crea la rama predeterminada
+  del repositorio. Hay que hacer `git checkout main` antes de `git log main`. Se detectó al hacer el
+  traspaso desde la laptop.

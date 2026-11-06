@@ -54,7 +54,14 @@ Secretos y dónde vive cada uno:
    ```bash
    cd privat
    ```
-3. Comprobar que `main` tiene todo lo aprobado (último commit y CI en verde en GitHub):
+3. Crear la rama local `main` y comprobar que tiene todo lo aprobado (último commit y CI en verde
+   en GitHub). Al clonar, Git crea en local **solo la rama predeterminada** del repositorio. Si esa
+   no es `main` (en el repositorio de trabajo era `claude/property-management-uruguay-sg6woy`),
+   `git log main` falla con *"ambiguous argument 'main'"*. `git checkout main` la crea a partir de
+   `origin/main`:
+   ```bash
+   git checkout main
+   ```
    ```bash
    git log --oneline -5 main
    ```
