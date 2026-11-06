@@ -18,3 +18,4 @@ Cada decisión técnica relevante se registra con su contexto, la decisión y su
 | [ADR-012](ADR-012-administradores-se-desactivan.md) | Los administradores se desactivan, no se borran | Aceptada (actualiza ADR-004) |
 | [ADR-013](ADR-013-panel-admin.md) | Panel: página aparte, sessionStorage, 2FA, validación en el servidor | Aceptada |
 | [ADR-014](ADR-014-contenido-publicado-en-el-build.md) | La landing se genera con el contenido publicado | Aceptada |
+| [ADR-015](ADR-015-aviso-email-resend.md) | Aviso de consultas por email con Resend, sin datos personales | Aceptada |

@@ -50,6 +50,7 @@ export function testConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     turnstileSecretKey: 'test-turnstile-secret',
     turnstileAllowedHostnames: [],
     vercelDeployHookUrl: null,
+    resend: null,
     ...overrides,
   };
 }

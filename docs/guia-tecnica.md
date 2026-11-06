@@ -61,7 +61,7 @@ Ver `apps/api/.env.example`. La API **no arranca** si falta una variable crític
 
 | Variable | Uso |
 |---|---|
-| `DATABASE_URL` | Conexión de la app: Supabase *transaction pooler* (:6543, `?pgbouncer=true`) |
+| `DATABASE_URL` | Conexión de la app: Supabase *transaction pooler* (:6543). No hace falta `?pgbouncer=true`: el driver `pg` lo ignora |
 | `DIRECT_URL` | Solo CLI/migraciones: conexión directa o *session pooler* (:5432). Nunca en Vercel |
 | `SUPABASE_URL` | URL del proyecto. La API descarga las claves públicas de `/auth/v1/.well-known/jwks.json` |
 | `CORS_ORIGINS` | Orígenes exactos permitidos, separados por coma. En producción solo `https` |
@@ -69,6 +69,10 @@ Ver `apps/api/.env.example`. La API **no arranca** si falta una variable crític
 | `TRUST_PROXY_HOPS` | Proxies de confianza delante de la API (Render: valor inicial 1, **a verificar** en el despliegue) |
 | `TURNSTILE_SECRET_KEY` | Clave **secreta** de Cloudflare Turnstile (solo en Render) |
 | `TURNSTILE_ALLOWED_HOSTNAMES` | Dominios del sitio aceptados en el token (obligatorio en producción) |
+| `RESEND_API_KEY` | Clave **secreta** de Resend. Obligatoria en producción junto con las 3 siguientes |
+| `LEAD_NOTIFY_FROM` | Remitente del aviso, con dominio verificado en Resend (ej. `PRIVAT <avisos@privatgp.com>`) |
+| `LEAD_NOTIFY_TO` | Destinatarios del aviso (1 a 10, separados por coma) |
+| `PANEL_URL` | URL del panel incluida en el aviso (`https` en producción) |
 | `VERCEL_DEPLOY_HOOK_URL` | Opcional y secreto. "Publicar" lo llama para recompilar la web |
 | `SHADOW_DATABASE_URL` | Solo desarrollo: base vacía y descartable para `prisma migrate diff --from-migrations` |
 
@@ -321,30 +325,30 @@ La prueba `el rol anon (Data API pública) no puede leer ninguna tabla` falla si
 motor, migraciones contra PostgreSQL 16 efímero, pruebas de la API y build. Ver
 [seguridad](seguridad.md#cadena-de-suministro).
 
-## 9. Despliegue (pendiente: cuentas del cliente, P-16)
+## 9. Despliegue
 
-**Web en Vercel:** proyecto con raíz `apps/web`. `vercel.json` define el comando de build, la carpeta
-`dist/client` y las cabeceras (HSTS, `frame-ancestors 'none'`, nosniff, Referrer-Policy y
-Permissions-Policy). Variables: `VITE_API_URL`, `VITE_SITE_URL` y `VITE_TURNSTILE_SITE_KEY`.
-Que el `buildCommand` (`cd ../.. && npm ci …`) funcione con la raíz en `apps/web` está **a verificar
-en el primer despliegue**.
+La guía completa y verificada del primer despliegue está en **[despliegue.md](despliegue.md)**:
+traspaso del código, Supabase, Resend, Turnstile, Render, Vercel, administrador inicial y
+verificación final.
 
+Resumen:
+- **API en Render:** build con `npm ci --include=dev --ignore-scripts && npm run build -w @ats/pricing && npm run build -w @ats/api`.
+  - `--include=dev` hace falta porque con `NODE_ENV=production` npm omite TypeScript y Prisma.
+  - Start con `npm start -w @ats/api`.
+  - Health check en `/health`.
+- **Web en Vercel:** raíz `apps/web`. `vercel.json` define:
+  - `installCommand` y `buildCommand`, que suben a la raíz del monorepo e incluyen las devDependencies;
+  - la carpeta `dist/client`;
+  - las cabeceras de seguridad.
 
-Pasos previstos cuando existan las cuentas:
-1. Supabase: crear proyecto (región cercana a Render Virginia), activar MFA TOTP en Auth.
-2. Ejecutar `npm run db:migrate` y `npm run db:seed` con `DIRECT_URL` desde un entorno protegido.
-3. Render: servicio web Node, plan pago (sin suspensión), región Virginia.
-   - Build: `npm ci --ignore-scripts && npm run build -w @ats/pricing && npm run build -w @ats/api`
-   - Start: `npm start -w @ats/api`
-   - Health check: `/health`
-4. Crear el usuario admin en Supabase Auth e insertar su fila en `admin_profile`.
-5. Cloudflare Turnstile: crear el widget para el dominio. La clave de sitio va en Vercel y la secreta en
-   Render (`TURNSTILE_SECRET_KEY`, `TURNSTILE_ALLOWED_HOSTNAMES`).
+  Node 24 se toma de `engines` en `apps/web/package.json`.
+- **Ambos builds se simularon en un clon limpio con `NODE_ENV=production` (06/11/2026).**
 
 ## 10. Traspaso al repositorio del cliente
 
-**Situación actual (04/11/2026):** PRIVAT todavía no tiene repositorio propio. Se trabaja en
-`aragontechsolutions-dev/ATS-SISGESPROP`. Cuando el cliente lo cree, se traspasa así.
+**Situación actual (06/11/2026):** PRIVAT tiene cuentas de GitHub, Render, Vercel y Supabase.
+El código se traspasa desde la laptop del desarrollador: se clona el repositorio de trabajo y se
+hace push al de PRIVAT. Pasos detallados en [despliegue.md](despliegue.md#1-llevar-el-código-al-repositorio-de-privat-desde-la-laptop).
 
 ### 10.1 Qué tiene que hacer el cliente
 1. Crear un repositorio **vacío**: sin README, sin `.gitignore` y sin licencia. Así se evitan

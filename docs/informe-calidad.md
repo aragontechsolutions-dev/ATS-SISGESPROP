@@ -102,7 +102,7 @@ unos 12,5 minutos. **Mejora posible:** cachear los navegadores de Playwright.
 | El cotizador reproduce al centavo los 3 casos de la planilla | ✅ |
 | El mapa calcula distancia y viático en Uruguay y rechaza puntos fuera | ✅ |
 | Un cambio en el panel aparece en la web después de "Publicar" | ✅ Verificado en local (cotizador al instante; textos al recompilar). El deploy hook de Vercel está **sin probar** contra Vercel |
-| El formulario guarda la consulta, avisa por email y bloquea envíos automatizados | ⚠️ Guarda y bloquea ✅. **Aviso por email pendiente** del proveedor (hoy queda en el log) |
+| El formulario guarda la consulta, avisa por email y bloquea envíos automatizados | ⚠️ Guarda y bloquea ✅. Aviso por email con Resend implementado y probado con pruebas unitarias ([ADR-015](adr/ADR-015-aviso-email-resend.md)); **envío real a verificar en el primer despliegue** |
 | El panel exige segundo factor y no es accesible sin sesión | ✅ Con Auth simulado. Falta repetirlo contra el Supabase del cliente |
 | Un usuario sin sesión no puede leer ninguna tabla (prueba automática) | ✅ |
 | El escaneo de seguridad no muestra hallazgos altos | ✅ 0 altos |

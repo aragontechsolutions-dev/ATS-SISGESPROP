@@ -1,0 +1,330 @@
+# Primer despliegue de PRIVAT (privatgp.com)
+
+Guía paso a paso para dejar el sistema en producción con las cuentas del cliente. Sigue el orden:
+cada paso usa datos del anterior.
+
+| Pieza | Servicio | Dirección prevista |
+|---|---|---|
+| Código | GitHub (repositorio de PRIVAT) | – |
+| Base de datos y login del panel | Supabase | `https://<proyecto>.supabase.co` |
+| API | Render (región Virginia) | `https://api.privatgp.com` |
+| Web y panel | Vercel | `https://privatgp.com` y `https://privatgp.com/admin/` |
+| Email de avisos | Resend | remitente `avisos@privatgp.com` |
+| Anti-spam del formulario | Cloudflare Turnstile | – |
+
+> **Nombres de menú:** los paneles de estos servicios cambian con frecuencia. Los nombres de esta
+> guía son orientativos. Los valores (claves, registros DNS, URLs) se copian siempre de la pantalla
+> del servicio; nunca se inventan.
+
+## 0. Reglas de seguridad para todo el proceso
+
+- **Nada de contraseñas compartidas.** Lo correcto es que el cliente invite al desarrollador como
+  miembro o colaborador en cada servicio: GitHub (colaborador), Vercel (miembro del equipo),
+  Render (miembro del workspace) y Supabase (miembro de la organización). Si ya se recibieron
+  contraseñas, al terminar el cliente las cambia.
+- **2FA activado** en GitHub, Vercel, Render, Supabase, Resend, Cloudflare y en el registrador del
+  dominio.
+- **Los secretos se pegan solo en el panel de cada servicio** (variables de entorno de Render o Vercel).
+  Nunca van en el repositorio, en un chat, en un email ni en un ticket.
+- **Solo hay un archivo `.env` local**, en la laptop, para correr migraciones. Está en `.gitignore`.
+  Se borra al terminar el despliegue.
+
+Secretos y dónde vive cada uno:
+
+| Secreto | Dónde se guarda |
+|---|---|
+| Contraseña de la base (`DATABASE_URL`, `DIRECT_URL`) | Render (`DATABASE_URL`); `DIRECT_URL` solo en la laptop durante las migraciones |
+| `IP_HASH_SECRET` | Render |
+| `TURNSTILE_SECRET_KEY` | Render |
+| `RESEND_API_KEY` | Render |
+| `VERCEL_DEPLOY_HOOK_URL` | Render |
+| Clave `service_role` de Supabase | **En ningún lado.** El sistema no la usa |
+
+## 1. Llevar el código al repositorio de PRIVAT (desde la laptop)
+
+**Requisitos:** Git y Node 24.22.1 (`.node-version`) instalados, más acceso de lectura a
+`aragontechsolutions-dev/ATS-SISGESPROP` y de escritura al repositorio de PRIVAT.
+
+1. El cliente crea en su cuenta un repositorio **privado y vacío**: sin README, sin `.gitignore`
+   y sin licencia. Después invita al desarrollador con permiso *Write* o *Maintain*.
+2. Clonar el repositorio de trabajo:
+   ```bash
+   git clone https://github.com/aragontechsolutions-dev/ATS-SISGESPROP.git privat
+   ```
+   ```bash
+   cd privat
+   ```
+3. Crear la rama local `main` y comprobar que tiene todo lo aprobado (último commit y CI en verde
+   en GitHub). Al clonar, Git crea en local **solo la rama predeterminada** del repositorio. Si esa
+   no es `main` (en el repositorio de trabajo era `claude/property-management-uruguay-sg6woy`),
+   `git log main` falla con *"ambiguous argument 'main'"*. `git checkout main` la crea a partir de
+   `origin/main`:
+   ```bash
+   git checkout main
+   ```
+   ```bash
+   git log --oneline -5 main
+   ```
+4. Agregar el repositorio del cliente como segundo remoto. Se llama `privat`, y `origin` sigue
+   apuntando al de Aragon Tech Solutions:
+   ```bash
+   git remote add privat https://github.com/<cuenta-de-privat>/<repositorio>.git
+   ```
+5. Subir `main` con todo el historial:
+   ```bash
+   git push privat main
+   ```
+   Si hay etiquetas, súbelas también:
+   ```bash
+   git push privat --tags
+   ```
+6. Configurar en el repositorio de PRIVAT (Settings):
+   - Rama predeterminada `main`, con protección: pull request obligatorio y CI (`test` y `e2e`) en verde.
+   - *Secret scanning* y *push protection* activados.
+   - Actions habilitado. `ci.yml` no necesita secretos.
+7. Comprobar que el CI corre y termina en verde en el repositorio nuevo (pestaña *Actions*).
+
+Git autentica con el navegador (Git Credential Manager), con `gh auth login` o con SSH. **No pegues
+un token en la URL del remoto**, porque queda guardado en `.git/config`.
+
+Desde aquí, Vercel y Render se conectan al **repositorio de PRIVAT**.
+
+## 2. Supabase (base de datos y login del panel)
+
+1. Crear el proyecto en la organización del cliente:
+   - Región **East US (North Virginia)**, la misma zona que Render Virginia, para menor latencia.
+   - Contraseña de la base: larga y aleatoria, guardada en el gestor de contraseñas del cliente.
+2. **Authentication** (configuración):
+   - Desactivar el **registro público** (*Allow new users to sign up* en off). El panel solo tiene
+     usuarios creados a mano.
+   - **MFA TOTP** activado. El panel exige 2FA (`aal2`).
+   - *Site URL*: `https://privatgp.com`.
+3. **Claves JWT:** confirmar que la clave de firma activa es **asimétrica** (ECC P-256 o RSA), en
+   *JWT Keys / Signing Keys*. La API solo acepta ES256 o RS256 y verifica con las claves públicas
+   (JWKS). Si el proyecto usa el secreto compartido HS256 (*legacy*), hay que migrar a claves
+   asimétricas. Si no, el panel responde 401.
+4. Anotar estos valores (en *Connect* / *API settings*):
+   - `SUPABASE_URL`: `https://<proyecto>.supabase.co`.
+   - **Clave publicable** (`anon` o `sb_publishable_…`). Va en Vercel. Es pública por diseño.
+   - Cadena del **transaction pooler** (puerto **6543**) → `DATABASE_URL` en Render.
+   - Cadena del **session pooler** (puerto **5432**) → `DIRECT_URL`, solo para migraciones. Se
+     recomienda el session pooler y no la conexión directa porque esta puede requerir IPv6.
+   - No hace falta agregar `?pgbouncer=true`: el driver `pg` lo ignora.
+5. Ejecutar las migraciones y los datos iniciales **desde la laptop**:
+   ```bash
+   cd apps/api
+   ```
+   ```bash
+   npm ci --ignore-scripts
+   ```
+   Crear `apps/api/.env` con una sola línea, `DIRECT_URL=<cadena del session pooler>`. Cargarla
+   en la terminal sin que quede en el historial:
+   ```bash
+   set -a; . ./.env; set +a
+   ```
+   ```bash
+   npm run db:migrate
+   ```
+   ```bash
+   npm run db:seed
+   ```
+   - `db:migrate` crea las 17 tablas y aplica la seguridad (RLS deny-all y REVOKE a `anon` y
+     `authenticated`).
+   - `db:seed` es idempotente: carga tipos, niveles, tolerancia territorial y textos provisorios.
+6. Comprobar en el *SQL editor* de Supabase:
+   ```sql
+   SELECT count(*) FROM public.content_block;
+   ```
+   ```sql
+   SELECT relname, relrowsecurity FROM pg_class
+   WHERE relnamespace = 'public'::regnamespace AND relkind = 'r';
+   ```
+   La primera consulta debe devolver 11. La segunda debe mostrar `relrowsecurity = true` en todas
+   las tablas.
+7. Borrar `apps/api/.env` de la laptop:
+   ```bash
+   rm apps/api/.env
+   ```
+
+## 3. Resend (email de avisos)
+
+1. Crear la cuenta (o entrar a la del cliente) y agregar el dominio **privatgp.com**.
+2. Cargar en el DNS del dominio **exactamente** los registros que muestra Resend: SPF/MX del
+   subdominio de envío y DKIM. Esperar a que figure como *Verified*.
+3. Recomendado: un registro **DMARC** para el dominio, por ejemplo `_dmarc.privatgp.com` con
+   `v=DMARC1; p=none; rua=mailto:<email del cliente>`. Se endurece más adelante.
+4. Crear una **API key** con permiso **Sending access** restringido al dominio privatgp.com. No
+   usar *Full access*. Se copia una sola vez y se pega directamente en Render (paso 5).
+5. Definir:
+   - **Remitente:** `PRIVAT <avisos@privatgp.com>`.
+   - **Destinatarios:** los emails del equipo, de 1 a 10.
+
+**Privacidad:** el aviso **no incluye datos del visitante**. Solo avisa que hay una consulta nueva y
+enlaza al panel, donde se ve con 2FA. Así los datos personales no pasan por el proveedor de email
+(Ley 18.331, minimización).
+
+## 4. Cloudflare Turnstile (anti-spam)
+
+Requiere una cuenta de Cloudflare. Es gratuita y **no** obliga a mover el DNS a Cloudflare.
+
+1. En *Turnstile*, agregar un widget con los hostnames `privatgp.com` y `www.privatgp.com`, en modo
+   *Managed*.
+2. Anotar:
+   - **Site key** (pública): va a Vercel como `VITE_TURNSTILE_SITE_KEY`.
+   - **Secret key**: va a Render como `TURNSTILE_SECRET_KEY`.
+
+## 5. Render (API)
+
+1. *New → Web Service*. Conectar el **repositorio de PRIVAT**, rama `main`.
+2. Configuración:
+   - Región **Virginia (US East)**.
+   - Runtime **Node**.
+   - Plan **pago**. En el plan gratuito el servicio se duerme y la primera visita tarda.
+   - *Root directory*: vacío (la raíz del monorepo).
+   - *Build command*:
+     ```bash
+     npm ci --include=dev --ignore-scripts && npm run build -w @ats/pricing && npm run build -w @ats/api
+     ```
+     `--include=dev` es necesario: con `NODE_ENV=production`, npm omite las devDependencies
+     (TypeScript, Prisma CLI) y el build falla. Verificado en una simulación limpia.
+   - *Start command*:
+     ```bash
+     npm start -w @ats/api
+     ```
+   - *Health check path*: `/health`.
+   - *Auto-deploy*: activado sobre `main`.
+3. Variables de entorno. La API **no arranca** si falta alguna obligatoria o es inválida.
+
+   | Variable | Valor |
+   |---|---|
+   | `NODE_ENV` | `production` |
+   | `DATABASE_URL` | Cadena del transaction pooler de Supabase (:6543) |
+   | `SUPABASE_URL` | `https://<proyecto>.supabase.co` |
+   | `CORS_ORIGINS` | `https://privatgp.com,https://www.privatgp.com` |
+   | `IP_HASH_SECRET` | Aleatorio, de 32 caracteres o más (ver abajo) |
+   | `TRUST_PROXY_HOPS` | `1` (a verificar con el tráfico real) |
+   | `TURNSTILE_SECRET_KEY` | Secret key de Turnstile |
+   | `TURNSTILE_ALLOWED_HOSTNAMES` | `privatgp.com,www.privatgp.com` |
+   | `RESEND_API_KEY` | API key de Resend |
+   | `LEAD_NOTIFY_FROM` | `PRIVAT <avisos@privatgp.com>` |
+   | `LEAD_NOTIFY_TO` | Emails del equipo, separados por coma |
+   | `PANEL_URL` | `https://privatgp.com/admin/` |
+   | `VERCEL_DEPLOY_HOOK_URL` | Se completa en el paso 6.5 |
+
+   `PORT` no se define: la asigna Render, y la API escucha en `0.0.0.0:$PORT`.
+
+   Para generar `IP_HASH_SECRET` en la laptop:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+   ```
+   Pégalo directamente en Render. Una vez en uso, no se cambia: cambiarlo invalida la agrupación
+   de IPs ya guardadas.
+4. Primer deploy. En el log, comprobar:
+   - Que use **Node 24.22.1**. Render lee `.node-version`; si no, definir `NODE_VERSION=24.22.1`.
+   - Que termine con la API escuchando.
+5. Probar:
+   ```bash
+   curl -sS https://<servicio>.onrender.com/health
+   ```
+6. **Dominio propio:** en *Settings → Custom Domains*, agregar `api.privatgp.com`. Cargar en el DNS
+   el registro que indique Render (CNAME) y esperar el certificado TLS.
+
+## 6. Vercel (web y panel)
+
+1. *Add New → Project*. Importar el **repositorio de PRIVAT**.
+2. Configuración:
+   - *Root Directory*: `apps/web`.
+   - Activar *Include files outside the root directory in the Build Step*. El build usa el
+     monorepo completo.
+   - *Framework preset*: Other. `vercel.json` ya define los comandos de instalación y build, la
+     carpeta `dist/client`, las cabeceras de seguridad y las rutas.
+   - *Node.js Version*: **24.x**. `apps/web/package.json` lo declara en `engines`; confirmarlo en
+     *Settings*.
+3. Variables de entorno (*Production*). **Todas son públicas**: terminan dentro del JavaScript.
+   Nunca pongas aquí un secreto.
+
+   | Variable | Valor |
+   |---|---|
+   | `VITE_API_URL` | `https://api.privatgp.com` (sin barra final) |
+   | `VITE_SITE_URL` | `https://privatgp.com` (sin barra final) |
+   | `VITE_TURNSTILE_SITE_KEY` | Site key de Turnstile |
+   | `VITE_SUPABASE_URL` | `https://<proyecto>.supabase.co` |
+   | `VITE_SUPABASE_ANON_KEY` | Clave **publicable** de Supabase (nunca la `service_role`) |
+   | `REQUIRE_PUBLISHED_CONTENT` | **No definirla en el primer deploy** (ver paso 7) |
+
+4. Deploy. Como todavía no hay contenido publicado, el build usa los textos provisorios y muestra
+   el aviso *"La API no respondió. Se usa el contenido provisorio"* o equivalente. Es lo esperado.
+5. **Deploy hook:** en *Settings → Git → Deploy Hooks*, crear uno para la rama `main`. Copiar la URL
+   y pegarla en Render como `VERCEL_DEPLOY_HOOK_URL`. Es un secreto: quien la conoce puede disparar
+   builds. Render redespliega solo al cambiar la variable.
+6. **Dominios:** en *Settings → Domains*, agregar `privatgp.com` y `www.privatgp.com`:
+   - `privatgp.com` como dominio principal.
+   - `www` redirige a `privatgp.com`.
+   - Cargar en el DNS los registros que indique Vercel.
+
+## 7. Administrador y primera publicación
+
+1. En Supabase, *Authentication → Users → Add user*. Crear el usuario con el email del
+   administrador, una contraseña fuerte y la confirmación automática.
+2. Darle acceso al panel. En el *SQL editor*:
+   ```sql
+   INSERT INTO public.admin_profile (id, email, full_name)
+   SELECT id, email, 'Nombre Apellido' FROM auth.users WHERE email = 'admin@privatgp.com';
+   ```
+   La fila de `admin_profile` es lo que da acceso: un usuario de Auth sin esa fila no entra al panel.
+3. Entrar a `https://privatgp.com/admin/`. El panel pide enrolar el 2FA con una app autenticadora
+   (Google Authenticator, 1Password, etc.).
+4. En el panel ([manual-panel.md](manual-panel.md)):
+   - Cargar la **base de operaciones**: dirección exacta (P-2) y regla de viático (P-3).
+   - Cargar los **perfiles de precio** (P-5).
+   - Revisar los textos.
+   - **Publicar.**
+5. Verificar que la publicación disparó el build en Vercel. Si `VERCEL_DEPLOY_HOOK_URL` está
+   configurada, ocurre solo.
+6. En Vercel, agregar `REQUIRE_PUBLISHED_CONTENT=true` y redesplegar. Desde aquí, un build que no
+   pueda leer el contenido publicado **falla** en lugar de publicar textos provisorios
+   ([ADR-014](adr/ADR-014-contenido-publicado-en-el-build.md)).
+
+## 8. Verificación final (smoke test)
+
+- [ ] `https://privatgp.com` carga con candado y `https://www.privatgp.com` redirige.
+- [ ] `https://api.privatgp.com/health` responde OK.
+- [ ] Cabeceras de seguridad presentes: `curl -sI https://privatgp.com` muestra HSTS,
+  `X-Frame-Options` o `frame-ancestors`, `X-Content-Type-Options` y `Referrer-Policy`.
+- [ ] Mapa de cobertura y cotizador funcionan con la base y los perfiles reales.
+- [ ] Formulario de contacto:
+  - se envía (Turnstile real);
+  - llega el email de aviso a los destinatarios, **sin datos del visitante**;
+  - la consulta aparece en el panel.
+- [ ] El panel exige 2FA y cierra la sesión por inactividad.
+- [ ] Desde la consola del navegador en otro dominio, una llamada a la API es rechazada por CORS.
+- [ ] En el log de Render no aparecen datos personales ni claves.
+- [ ] Registrar el resultado en [informe-calidad.md](informe-calidad.md) y en la
+  [bitácora](bitacora.md).
+
+## 9. Después del despliegue
+
+- El cliente cambia las contraseñas compartidas y revisa los miembros de cada servicio.
+- Actualizar la nota "Repositorio de trabajo" del `README.md`.
+- Decidir el destino del repositorio de Aragon Tech Solutions: archivar o mantener como copia
+  (pregunta M-3).
+- Pendientes que siguen abiertos: logo y fotos (D4, P-1, P-13b), textos definitivos,
+  `TRUST_PROXY_HOPS` verificado con tráfico real, y prueba del panel contra Supabase real
+  ([pendientes.md](pendientes.md)).
+
+## Verificado antes del despliegue (06/11/2026)
+
+- **Build de Render** simulado en un clon limpio con `NODE_ENV=production`: genera
+  `apps/api/dist/src/main.js`.
+- **La API se niega a arrancar** en producción sin las variables de Resend, con el mensaje
+  *"En producción el aviso por email es obligatorio…"*.
+- **Build de Vercel** simulado con los comandos de `vercel.json`, desde `apps/web` y con
+  `NODE_ENV=production`:
+  - genera `dist/client/index.html`, `admin/index.html`, `sitemap.xml` y `robots.txt`;
+  - con `REQUIRE_PUBLISHED_CONTENT=true` y la API inaccesible, el build falla, como corresponde.
+- **No verificable aquí** (requiere las cuentas reales):
+  - DNS y certificados;
+  - envío real por Resend;
+  - Turnstile real;
+  - Supabase real (JWKS, 2FA);
+  - el valor correcto de `TRUST_PROXY_HOPS` en Render.

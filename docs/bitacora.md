@@ -151,3 +151,41 @@ PRIVAT; los commits del Bloque D se suman a esa misma rama.
   la landing pasa 11/11 en Chromium, Firefox y WebKit.
 - Docker: sin demonio; ZAP se ejecutó con la distribución Java, verificada por SHA-256.
 - Día 15 (dominio, SSL y publicación): requiere las cuentas del cliente (P-16).
+
+## 2026-11-06 – Preparación del primer despliegue
+
+**Contexto**
+- El cliente aprobó **Resend** como proveedor de email y tiene el dominio **privatgp.com**.
+- Entregó accesos a GitHub, Render, Vercel y Supabase.
+- Aún faltan el logo y las fotos.
+
+**Hecho**
+- **Aviso de consultas por email con Resend** ([ADR-015](adr/ADR-015-aviso-email-resend.md)):
+  - el email no incluye datos del visitante;
+  - es obligatorio en producción;
+  - lleva clave de idempotencia y tiempo máximo de 10 s.
+- **Pruebas unitarias:** 3 nuevas (configuración y envío). La suite unitaria pasa completa.
+- **`vercel.json`:** `installCommand` y `buildCommand` con `--include=dev`. Con
+  `NODE_ENV=production`, npm omitía TypeScript, Vite y Prisma, y el build fallaba.
+- **`apps/web/package.json`:** declara `engines` (Node 24), de donde lo toma Vercel.
+- **`apps/api/.env.example`:**
+  - nuevas variables de Resend;
+  - se quitó `?pgbouncer=true`, que el driver `pg` ignora.
+- **Guía de primer despliegue:** [despliegue.md](despliegue.md).
+
+**Verificado en un clon limpio**
+- Build de Render con `NODE_ENV=production`: OK.
+- Arranque en producción sin Resend: la API se niega a iniciar, con un mensaje claro.
+- Build de Vercel con los comandos de `vercel.json`, desde `apps/web`: OK.
+- Con `REQUIRE_PUBLISHED_CONTENT=true` y la API inaccesible: el build falla, como corresponde.
+
+**Limitación del entorno**
+- Este contenedor solo tiene Node 22. Las simulaciones se hicieron desactivando únicamente la
+  comprobación `engine-strict`. Render y Vercel usarán Node 24.22.1, y el CI ya corre con esa
+  versión.
+
+**Pendiente:** el despliegue real con las cuentas del cliente (requiere Cloudflare, DNS y los
+emails de destino).
+- Corrección en [despliegue.md](despliegue.md) (paso 1): al clonar solo se crea la rama predeterminada
+  del repositorio. Hay que hacer `git checkout main` antes de `git log main`. Se detectó al hacer el
+  traspaso desde la laptop.
