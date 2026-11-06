@@ -189,3 +189,19 @@ emails de destino).
 - Corrección en [despliegue.md](despliegue.md) (paso 1): al clonar solo se crea la rama predeterminada
   del repositorio. Hay que hacer `git checkout main` antes de `git log main`. Se detectó al hacer el
   traspaso desde la laptop.
+
+## 2026-11-06 – Traspaso del código y decisiones del cliente
+
+- **Código subido** a `privatgestor-uy/privat` (privado) desde la laptop, rama `main`, con el
+  historial completo.
+- **Decisiones del cliente:**
+  - DNS en GoDaddy.
+  - Sin cuenta de Cloudflare: se crea una solo para Turnstile.
+  - Render en plan gratuito por ahora.
+  - Destinatarios del aviso: el email del administrador hasta que el cliente defina otros.
+- **[despliegue.md](despliegue.md):**
+  - tabla de decisiones;
+  - notas para GoDaddy;
+  - consecuencias del plan gratuito de Render;
+  - migraciones con comandos de PowerShell, sin archivo `.env` (la cadena se pide con `Read-Host`);
+  - `npm ci` desde la raíz del monorepo.

@@ -16,6 +16,16 @@ cada paso usa datos del anterior.
 > guía son orientativos. Los valores (claves, registros DNS, URLs) se copian siempre de la pantalla
 > del servicio; nunca se inventan.
 
+## Decisiones del cliente (06/11/2026)
+
+| Tema | Decisión | Efecto en esta guía |
+|---|---|---|
+| Repositorio | `privatgestor-uy/privat`, **privado**. Código subido el 06/11/2026 | En el plan gratuito de GitHub, los repositorios privados tienen un cupo mensual de minutos de Actions, y la protección de ramas y el *secret scanning* pueden requerir un plan pago. Revisar en *Settings* qué ofrece la cuenta |
+| DNS | Dominio comprado en **GoDaddy**. Los registros se cargan en GoDaddy (*Mis productos → Dominio → DNS*) | Ver "Notas para GoDaddy" en el paso 3 |
+| Cloudflare | El cliente **no tiene cuenta**. Hay que crearla (gratis) solo para Turnstile | El DNS sigue en GoDaddy: no se mueve a Cloudflare |
+| Render | **Plan gratuito por ahora.** Se le insiste al cliente para pasar al pago | El servicio se duerme tras un rato sin tráfico y tarda en despertar (ver paso 5) |
+| Destinatarios del aviso | Pendiente: deben ser buzones reales del equipo | Ver paso 3 |
+
 ## 0. Reglas de seguridad para todo el proceso
 
 - **Nada de contraseñas compartidas.** Lo correcto es que el cliente invite al desarrollador como
@@ -110,23 +120,48 @@ Desde aquí, Vercel y Render se conectan al **repositorio de PRIVAT**.
    - Cadena del **session pooler** (puerto **5432**) → `DIRECT_URL`, solo para migraciones. Se
      recomienda el session pooler y no la conexión directa porque esta puede requerir IPv6.
    - No hace falta agregar `?pgbouncer=true`: el driver `pg` lo ignora.
-5. Ejecutar las migraciones y los datos iniciales **desde la laptop**:
-   ```bash
-   cd apps/api
+5. Ejecutar las migraciones y los datos iniciales **desde la laptop**, con Node 24.22.1.
+   No se crea ningún archivo `.env`: la cadena de conexión se pide en la terminal, vive solo en esa
+   sesión y se borra al terminar. Si la contraseña de la base tiene caracteres especiales
+   (`@ : / ? # [ ] %`), van codificados en la URL (por ejemplo, `@` → `%40`). Lo más simple es una
+   contraseña solo con letras y números, pero larga (32 o más).
+
+   **Windows (PowerShell)**, desde la raíz del repositorio (`C:\dev\privat`):
+   ```powershell
+   node -v
    ```
+   ```powershell
+   npm ci --ignore-scripts
+   ```
+   ```powershell
+   $env:DIRECT_URL = Read-Host "Cadena del session pooler (5432)"
+   ```
+   Lo que se escribe en `Read-Host` no queda en el historial de PowerShell.
+   ```powershell
+   cd apps\api
+   ```
+   ```powershell
+   npm run db:migrate
+   ```
+   ```powershell
+   npm run db:seed
+   ```
+   ```powershell
+   Remove-Item Env:DIRECT_URL
+   ```
+
+   **Linux o macOS (bash)**, desde la raíz del repositorio:
    ```bash
    npm ci --ignore-scripts
    ```
-   Crear `apps/api/.env` con una sola línea, `DIRECT_URL=<cadena del session pooler>`. Cargarla
-   en la terminal sin que quede en el historial:
    ```bash
-   set -a; . ./.env; set +a
+   read -rs -p "Cadena del session pooler (5432): " DIRECT_URL && export DIRECT_URL
    ```
    ```bash
-   npm run db:migrate
+   cd apps/api && npm run db:migrate && npm run db:seed
    ```
    ```bash
-   npm run db:seed
+   unset DIRECT_URL
    ```
    - `db:migrate` crea las 17 tablas y aplica la seguridad (RLS deny-all y REVOKE a `anon` y
      `authenticated`).
@@ -141,23 +176,32 @@ Desde aquí, Vercel y Render se conectan al **repositorio de PRIVAT**.
    ```
    La primera consulta debe devolver 11. La segunda debe mostrar `relrowsecurity = true` en todas
    las tablas.
-7. Borrar `apps/api/.env` de la laptop:
-   ```bash
-   rm apps/api/.env
-   ```
+7. Si en algún momento creaste un `apps/api/.env` en la laptop, bórralo. Está en `.gitignore`,
+   pero no debe quedar ahí.
 
 ## 3. Resend (email de avisos)
 
 1. Crear la cuenta (o entrar a la del cliente) y agregar el dominio **privatgp.com**.
 2. Cargar en el DNS del dominio **exactamente** los registros que muestra Resend: SPF/MX del
    subdominio de envío y DKIM. Esperar a que figure como *Verified*.
+   **Notas para GoDaddy** (valen también para los registros de Vercel y Render):
+   - En el campo *Nombre/Host*, GoDaddy agrega el dominio solo. Se escribe `send`, no
+     `send.privatgp.com`; para el dominio raíz se usa `@`.
+   - Antes de cargar los registros de Vercel, borra cualquier registro `A` de `@` que apunte a
+     "Parked", así como el *reenvío de dominio* (forwarding), si está activado.
+   - Si el dominio ya tiene correo (MX en `@`), **no lo toques**. Resend usa el subdominio de envío.
+   - Los cambios pueden tardar desde minutos hasta horas en verse.
 3. Recomendado: un registro **DMARC** para el dominio, por ejemplo `_dmarc.privatgp.com` con
    `v=DMARC1; p=none; rua=mailto:<email del cliente>`. Se endurece más adelante.
 4. Crear una **API key** con permiso **Sending access** restringido al dominio privatgp.com. No
    usar *Full access*. Se copia una sola vez y se pega directamente en Render (paso 5).
 5. Definir:
-   - **Remitente:** `PRIVAT <avisos@privatgp.com>`.
-   - **Destinatarios:** los emails del equipo, de 1 a 10.
+   - **Remitente:** `PRIVAT <avisos@privatgp.com>`. Resend envía desde ahí sin que exista un buzón
+     con ese nombre. Las respuestas a ese correo no llegarían a nadie, y por eso el aviso no
+     invita a responder.
+   - **Destinatarios:** de 1 a 10 **buzones reales** que el equipo lea; nunca direcciones
+     inventadas. Mientras el cliente no defina otros, se usa el email del administrador del
+     panel. Se cambia cuando quieras editando `LEAD_NOTIFY_TO` en Render, sin tocar el código.
 
 **Privacidad:** el aviso **no incluye datos del visitante**. Solo avisa que hay una consulta nueva y
 enlaza al panel, donde se ve con 2FA. Así los datos personales no pasan por el proveedor de email
@@ -165,7 +209,9 @@ enlaza al panel, donde se ve con 2FA. Así los datos personales no pasan por el 
 
 ## 4. Cloudflare Turnstile (anti-spam)
 
-Requiere una cuenta de Cloudflare. Es gratuita y **no** obliga a mover el DNS a Cloudflare.
+Requiere una cuenta de Cloudflare. El cliente no tiene una: hay que crearla con un email del
+cliente y 2FA activado. Es gratuita y **no** obliga a mover el DNS a Cloudflare: el dominio sigue
+en GoDaddy.
 
 1. En *Turnstile*, agregar un widget con los hostnames `privatgp.com` y `www.privatgp.com`, en modo
    *Managed*.
@@ -179,7 +225,12 @@ Requiere una cuenta de Cloudflare. Es gratuita y **no** obliga a mover el DNS a 
 2. Configuración:
    - Región **Virginia (US East)**.
    - Runtime **Node**.
-   - Plan **pago**. En el plan gratuito el servicio se duerme y la primera visita tarda.
+   - Plan **pago** (recomendado). El cliente arranca con el **gratuito**. Consecuencias:
+     - El servicio se duerme sin tráfico, y la primera visita después de eso tarda en responder.
+     - El cotizador y el formulario pueden demorar en esa primera llamada.
+     - El build de Vercel reintenta la lectura del contenido durante unos 90 s (6 intentos ×
+       15 s, ADR-014), justamente para dar tiempo a que Render despierte.
+     - Pasar al plan pago es un cambio de plan en Render; no hay que tocar nada del código.
    - *Root directory*: vacío (la raíz del monorepo).
    - *Build command*:
      ```bash
