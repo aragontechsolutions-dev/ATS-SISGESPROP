@@ -284,7 +284,9 @@ en GoDaddy.
    | `PANEL_URL` | `https://privatgp.com/admin/` |
    | `VERCEL_DEPLOY_HOOK_URL` | Se completa en el paso 6.5 |
 
-   `PORT` no se define: la asigna Render, y la API escucha en `0.0.0.0:$PORT`.
+   - **Los valores se pegan sin comillas**, ni simples ni dobles. Render los guarda tal cual. Si
+     una variable obligatoria va entre comillas, la API no arranca y lo indica en el log.
+   - `PORT` no se define: la asigna Render, y la API escucha en `0.0.0.0:$PORT`.
 
    Para generar `IP_HASH_SECRET` en la laptop:
    ```bash
@@ -314,6 +316,7 @@ URL ni la contraseña. Por ejemplo:
 
 | Código o texto en el log | Causa probable |
 |---|---|
+| Cadena entre comillas (`"postgresql://…"`) | Render guarda el valor literal, comillas incluidas. **Caso real del 07/11/2026.** Desde entonces la API no arranca y avisa `DATABASE_URL no debe ir entre comillas` |
 | `28P01` / `password authentication failed` | Contraseña incorrecta, o quedó el texto `[YOUR-PASSWORD]` de la plantilla |
 | `Tenant or user not found` | Usuario o host del pooler equivocados. El usuario del pooler es `postgres.<id-del-proyecto>` |
 | `ENOTFOUND` / `Can't reach database server` | Host mal escrito o conexión directa (IPv6). Usar el *pooler* |

@@ -21,7 +21,7 @@ describe('describeDbError (log del health check)', () => {
 
 const baseEnv = {
   NODE_ENV: 'production',
-  DATABASE_URL: 'postgresql://x',
+  DATABASE_URL: 'postgresql://u:p@db.local:6543/postgres',
   SUPABASE_URL: 'https://p.supabase.co',
   CORS_ORIGINS: 'https://www.cliente.com.uy',
   IP_HASH_SECRET: 'x'.repeat(32),
@@ -70,6 +70,17 @@ describe('loadConfig', () => {
     assert.throws(() => loadConfig({ ...baseEnv, LEAD_NOTIFY_FROM: 'no es un email' }), /LEAD_NOTIFY_FROM/);
     assert.throws(() => loadConfig({ ...baseEnv, LEAD_NOTIFY_TO: 'a@b.uy, malo' }), /LEAD_NOTIFY_TO/);
     assert.throws(() => loadConfig({ ...baseEnv, PANEL_URL: 'http://privatgp.com/admin/' }), /https/);
+  });
+  it('rechaza valores entre comillas y DATABASE_URL inválida, sin mostrar el valor', () => {
+    assert.throws(() => loadConfig({ ...baseEnv, DATABASE_URL: '"postgresql://u:clave@h:6543/db"' }), /DATABASE_URL no debe ir entre comillas/);
+    assert.throws(() => loadConfig({ ...baseEnv, TURNSTILE_SECRET_KEY: "'s'" }), /TURNSTILE_SECRET_KEY no debe ir entre comillas/);
+    for (const bad of ['https://h/db', 'no-es-url-clave123', 'postgresql:///sin-host']) {
+      assert.throws(
+        () => loadConfig({ ...baseEnv, DATABASE_URL: bad }),
+        (e: Error) => /cadena PostgreSQL válida/.test(e.message) && !e.message.includes(bad),
+      );
+    }
+    assert.equal(loadConfig({ ...baseEnv, DATABASE_URL: 'postgresql://u:p%40ss@h.pooler.supabase.com:6543/postgres' }).databaseUrl.startsWith('postgresql://'), true);
   });
   it('exige un secreto de hash de IP largo', () => {
     assert.throws(() => loadConfig({ ...baseEnv, IP_HASH_SECRET: 'corto' }), /32/);

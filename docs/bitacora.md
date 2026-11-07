@@ -256,3 +256,12 @@ emails de destino).
 - Las URLs de conexión se tapan; se verificó que la contraseña no aparece.
 - Prueba unitaria nueva.
 - Tabla de diagnóstico en [despliegue.md](despliegue.md#51-si-el-deploy-termina-en-timed-out).
+- **Causa real:** `DATABASE_URL` se cargó en Render **entre comillas**, y Render guarda el valor
+  literal. Al quitarlas, `/health` respondió `ok` en `https://privat-api.onrender.com`.
+- **Prevención:**
+  - `loadConfig` rechaza cualquier variable obligatoria entre comillas.
+  - Exige que `DATABASE_URL` sea una URL `postgresql://` con host.
+  - Así la API falla al arrancar con un mensaje claro, en lugar de esperar 15 minutos hasta el
+    *Timed Out*.
+  - Los mensajes no incluyen el valor.
+- Pruebas: 85/85.
