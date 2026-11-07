@@ -239,3 +239,20 @@ emails de destino).
   registro (`p=quarantine`).
 - Turnstile y API key de Resend creados por el usuario. Las claves no se compartieron en el chat.
 - Destinatario de los avisos: `privat.gestor@gmail.com`.
+
+## 2026-11-07 – Primer deploy en Render: *Timed Out*
+
+**Qué pasó**
+- El build en Render salió OK: Node 24.22.1, 0 vulnerabilidades, Prisma generado.
+- Nest arrancó, pero a los 15 minutos el deploy terminó en *Timed Out*.
+
+**Causa**
+- `/health` (el health check de Render) consulta la base y respondía 503.
+- El error se descartaba sin registrarse, así que el log no mostraba la causa.
+
+**Corrección**
+- `HealthController` registra el código y el mensaje del error de base de datos, **solo al cambiar
+  de estado** para no llenar el log.
+- Las URLs de conexión se tapan; se verificó que la contraseña no aparece.
+- Prueba unitaria nueva.
+- Tabla de diagnóstico en [despliegue.md](despliegue.md#51-si-el-deploy-termina-en-timed-out).

@@ -302,6 +302,35 @@ en GoDaddy.
 6. **Dominio propio:** en *Settings → Custom Domains*, agregar `api.privatgp.com`. Cargar en el DNS
    el registro que indique Render (CNAME) y esperar el certificado TLS.
 
+### 5.1 Si el deploy termina en *Timed Out*
+
+Render da el deploy por bueno cuando `/health` responde 200. `/health` hace `SELECT 1` en la base:
+si la base no responde, devuelve 503 y, a los 15 minutos, Render corta con *Timed Out*, aunque el
+log diga *Nest application successfully started*. Casi siempre es `DATABASE_URL`.
+
+Desde el 07/11/2026 la API registra la causa en el log, **una vez** por cada cambio de estado, sin la
+URL ni la contraseña. Por ejemplo:
+`[Health] Base de datos no disponible (P2010: … Code: 28P01 … password authentication failed …)`.
+
+| Código o texto en el log | Causa probable |
+|---|---|
+| `28P01` / `password authentication failed` | Contraseña incorrecta, o quedó el texto `[YOUR-PASSWORD]` de la plantilla |
+| `Tenant or user not found` | Usuario o host del pooler equivocados. El usuario del pooler es `postgres.<id-del-proyecto>` |
+| `ENOTFOUND` / `Can't reach database server` | Host mal escrito o conexión directa (IPv6). Usar el *pooler* |
+| `ETIMEDOUT` | Puerto o host incorrectos: el transaction pooler usa el puerto **6543** |
+| URL inválida | Caracteres especiales de la contraseña sin codificar (`@` → `%40`, `#` → `%23`, etc.) |
+
+Prueba de la cadena desde la laptop, en PowerShell y en la raíz del repositorio:
+```powershell
+$env:DATABASE_URL = Read-Host "Cadena del transaction pooler (6543)"
+```
+```powershell
+node -e "const {Client}=require('pg'); const c=new Client({connectionString:process.env.DATABASE_URL}); c.connect().then(()=>c.query('select 1')).then(()=>{console.log('CONEXION OK'); return c.end()}).catch(e=>{console.error('ERROR', e.code, e.message); process.exit(1)})"
+```
+```powershell
+Remove-Item Env:DATABASE_URL
+```
+
 ## 6. Vercel (web y panel)
 
 1. *Add New → Project*. Importar el **repositorio de PRIVAT**.

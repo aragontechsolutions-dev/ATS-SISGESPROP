@@ -7,6 +7,17 @@ import { isWithinTerritory } from '@ats/pricing';
 import { DEFAULT_TERRITORY_TOLERANCE_KM, URUGUAY_GEOMETRY } from '../src/geo/uruguay.ts';
 import { TurnstileVerifier } from '../src/leads/turnstile.verifier.ts';
 import { ResendLeadNotifier } from '../src/leads/resend-notifier.ts';
+import { describeDbError } from '../src/health/health.controller.ts';
+
+describe('describeDbError (log del health check)', () => {
+  it('muestra el código y el mensaje, nunca la URL de conexión', () => {
+    const err = Object.assign(new Error('password authentication failed for user "postgres.abc"'), { code: '28P01' });
+    assert.equal(describeDbError(err), '28P01: password authentication failed for user "postgres.abc"');
+    const leak = new Error('bad postgresql://u:secreta@h:6543/db');
+    assert.ok(!describeDbError(leak).includes('secreta'));
+    assert.match(describeDbError({ cause: { code: 'ENOTFOUND', message: 'getaddrinfo ENOTFOUND x' } }), /^ENOTFOUND/);
+  });
+});
 
 const baseEnv = {
   NODE_ENV: 'production',
