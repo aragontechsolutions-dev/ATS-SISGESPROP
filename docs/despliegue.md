@@ -113,6 +113,11 @@ Desde aquí, Vercel y Render se conectan al **repositorio de PRIVAT**.
    *JWT Keys / Signing Keys*. La API solo acepta ES256 o RS256 y verifica con las claves públicas
    (JWKS). Si el proyecto usa el secreto compartido HS256 (*legacy*), hay que migrar a claves
    asimétricas. Si no, el panel responde 401.
+   - **Verificado en el proyecto de PRIVAT (07/11/2026):** la clave en uso (*Current*) es
+     **ECC (P-256)**. La HS256 figura como *Previous*.
+   - En Vercel usar la **clave publicable** (`sb_publishable_…`), no la `anon` legacy (que es un JWT
+     firmado con el secreto HS256).
+   - Ni la API ni la web usan las claves legacy `anon` o `service_role`.
 4. Anotar estos valores (en *Connect* / *API settings*):
    - `SUPABASE_URL`: `https://<proyecto>.supabase.co`.
    - **Clave publicable** (`anon` o `sb_publishable_…`). Va en Vercel. Es pública por diseño.
@@ -356,6 +361,15 @@ en GoDaddy.
 ## 9. Después del despliegue
 
 - El cliente cambia las contraseñas compartidas y revisa los miembros de cada servicio.
+- **Supabase, claves legacy:** con el panel ya verificado en producción, desactivar las API keys
+  basadas en JWT (`anon` y `service_role` legacy) en *Settings → API Keys*. Después, cuando hayan
+  vencido los tokens viejos, revocar la clave HS256 *Previous* en *JWT Keys*. Así deja de existir
+  un secreto compartido capaz de firmar tokens válidos para Supabase.
+- **Supabase, plan gratuito:**
+  - Según la política publicada por Supabase, los proyectos gratuitos pueden pausarse por
+    inactividad y no incluyen copias de seguridad diarias.
+  - Revisar las condiciones vigentes en su web y proponer al cliente el plan Pro antes de cargar
+    datos reales.
 - Actualizar la nota "Repositorio de trabajo" del `README.md`.
 - Decidir el destino del repositorio de Aragon Tech Solutions: archivar o mantener como copia
   (pregunta M-3).

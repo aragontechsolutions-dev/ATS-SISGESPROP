@@ -205,3 +205,13 @@ emails de destino).
   - consecuencias del plan gratuito de Render;
   - migraciones con comandos de PowerShell, sin archivo `.env` (la cadena se pide con `Read-Host`);
   - `npm ci` desde la raíz del monorepo.
+
+## 2026-11-07 – Supabase de PRIVAT: claves de firma
+
+- Verificado (captura del panel):
+  - la clave de firma en uso es **ECC (P-256)**, compatible con la API (ES256);
+  - la HS256 quedó como *Previous*.
+- En [despliegue.md](despliegue.md):
+  - se usa la clave publicable;
+  - tras el despliegue, desactivar las claves legacy y revocar la HS256;
+  - se suma una advertencia sobre el plan gratuito de Supabase.
