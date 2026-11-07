@@ -199,8 +199,21 @@ Desde aquí, Vercel y Render se conectan al **repositorio de PRIVAT**.
      "Parked", así como el *reenvío de dominio* (forwarding), si está activado.
    - Si el dominio ya tiene correo (MX en `@`), **no lo toques**. Resend usa el subdominio de envío.
    - Los cambios pueden tardar desde minutos hasta horas en verse.
-3. Recomendado: un registro **DMARC** para el dominio, por ejemplo `_dmarc.privatgp.com` con
-   `v=DMARC1; p=none; rua=mailto:<email del cliente>`. Se endurece más adelante.
+3. **DMARC: un solo registro `_dmarc`.** Si hay dos o más, los receptores ignoran DMARC por
+   completo (RFC 7489).
+   - **Estado en privatgp.com (07/11/2026):** GoDaddy ya había creado uno:
+     `v=DMARC1; p=quarantine; adkim=r; aspf=r; rua=mailto:…@onsecureserver.net`. Se agregó otro por
+     error y se indicó borrarlo.
+   - **Se mantiene el de GoDaddy (`p=quarantine`).** Los avisos de Resend pasan porque van firmados
+     con DKIM de `privatgp.com` y la alineación es relajada (`adkim=r`). Confirmar en la verificación
+     final que el aviso no llegue a spam.
+   - **Advertencia a futuro:** si el cliente envía correo desde @privatgp.com con otro servicio
+     (por ejemplo Google Workspace), antes hay que configurar el SPF y el DKIM de ese servicio. Si
+     no, con `p=quarantine` esos correos van a spam.
+   - **Comprobar** desde PowerShell: `Resolve-DnsName -Type TXT _dmarc.privatgp.com` (debe aparecer
+     uno solo).
+   - **Enable receiving** en Resend: apagado. El dominio no tiene MX (no recibe correo) y no debe
+     apuntar a Resend.
 4. Crear una **API key** con permiso **Sending access** restringido al dominio privatgp.com. No
    usar *Full access*. Se copia una sola vez y se pega directamente en Render (paso 5).
 5. Definir:

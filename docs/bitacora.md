@@ -224,3 +224,14 @@ emails de destino).
 - Configuración de Auth confirmada por el usuario: registro público desactivado, TOTP habilitado y
   *Site URL* `https://privatgp.com`.
 - Migraciones y seed: el usuario indicó que todo lo demás está OK.
+
+## 2026-11-07 – Resend y DNS (GoDaddy)
+
+- **Registros de envío:** DKIM (`resend._domainkey`) y SPF (CNAME `send` y `rsend` hacia
+  `*.forge.rmta.net`) **verificados** en Resend.
+- **MX:** `privatgp.com` no tiene MX, así que el dominio no recibe correo. La recepción de Resend
+  se deja apagada; su MX en `@` no se carga.
+- **DMARC:** había **dos** registros `_dmarc`, lo que invalida DMARC. Uno lo había creado GoDaddy
+  con `p=quarantine` y el otro se agregó por error con `p=none`.
+- **Decisión:** se mantiene el de GoDaddy y se borra el duplicado.
+- **A verificar en el primer envío real:** que el aviso no llegue a spam.
