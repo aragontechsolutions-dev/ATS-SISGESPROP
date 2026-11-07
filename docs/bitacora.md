@@ -189,3 +189,79 @@ emails de destino).
 - Corrección en [despliegue.md](despliegue.md) (paso 1): al clonar solo se crea la rama predeterminada
   del repositorio. Hay que hacer `git checkout main` antes de `git log main`. Se detectó al hacer el
   traspaso desde la laptop.
+
+## 2026-11-06 – Traspaso del código y decisiones del cliente
+
+- **Código subido** a `privatgestor-uy/privat` (privado) desde la laptop, rama `main`, con el
+  historial completo.
+- **Decisiones del cliente:**
+  - DNS en GoDaddy.
+  - Sin cuenta de Cloudflare: se crea una solo para Turnstile.
+  - Render en plan gratuito por ahora.
+  - Destinatarios del aviso: el email del administrador hasta que el cliente defina otros.
+- **[despliegue.md](despliegue.md):**
+  - tabla de decisiones;
+  - notas para GoDaddy;
+  - consecuencias del plan gratuito de Render;
+  - migraciones con comandos de PowerShell, sin archivo `.env` (la cadena se pide con `Read-Host`);
+  - `npm ci` desde la raíz del monorepo.
+
+## 2026-11-07 – Supabase de PRIVAT: claves de firma
+
+- Verificado (captura del panel):
+  - la clave de firma en uso es **ECC (P-256)**, compatible con la API (ES256);
+  - la HS256 quedó como *Previous*.
+- En [despliegue.md](despliegue.md):
+  - se usa la clave publicable;
+  - tras el despliegue, desactivar las claves legacy y revocar la HS256;
+  - se suma una advertencia sobre el plan gratuito de Supabase.
+- Supabase quedó en **Oregon (us-west)**, no en Virginia como se había previsto.
+- **Decisión:** Render también va en **Oregon**, para que la API y la base estén en la misma región.
+  Cada petición hace varias consultas a la base, así que esa latencia es la que más pesa.
+- La distancia extra del visitante en Uruguay hasta Oregon se paga una sola vez por petición, y
+  la landing se sirve desde la CDN de Vercel.
+- Así se evita recrear el proyecto de Supabase.
+- Configuración de Auth confirmada por el usuario: registro público desactivado, TOTP habilitado y
+  *Site URL* `https://privatgp.com`.
+- Migraciones y seed: el usuario indicó que todo lo demás está OK.
+
+## 2026-11-07 – Resend y DNS (GoDaddy)
+
+- **Registros de envío:** DKIM (`resend._domainkey`) y SPF (CNAME `send` y `rsend` hacia
+  `*.forge.rmta.net`) **verificados** en Resend.
+- **MX:** `privatgp.com` no tiene MX, así que el dominio no recibe correo. La recepción de Resend
+  se deja apagada; su MX en `@` no se carga.
+- **DMARC:** había **dos** registros `_dmarc`, lo que invalida DMARC. Uno lo había creado GoDaddy
+  con `p=quarantine` y el otro se agregó por error con `p=none`.
+- **Decisión:** se mantiene el de GoDaddy y se borra el duplicado.
+- **A verificar en el primer envío real:** que el aviso no llegue a spam.
+- DMARC: confirmado contra el DNS autoritativo de GoDaddy (`ns41.domaincontrol.com`). Queda un solo
+  registro (`p=quarantine`).
+- Turnstile y API key de Resend creados por el usuario. Las claves no se compartieron en el chat.
+- Destinatario de los avisos: `privat.gestor@gmail.com`.
+
+## 2026-11-07 – Primer deploy en Render: *Timed Out*
+
+**Qué pasó**
+- El build en Render salió OK: Node 24.22.1, 0 vulnerabilidades, Prisma generado.
+- Nest arrancó, pero a los 15 minutos el deploy terminó en *Timed Out*.
+
+**Causa**
+- `/health` (el health check de Render) consulta la base y respondía 503.
+- El error se descartaba sin registrarse, así que el log no mostraba la causa.
+
+**Corrección**
+- `HealthController` registra el código y el mensaje del error de base de datos, **solo al cambiar
+  de estado** para no llenar el log.
+- Las URLs de conexión se tapan; se verificó que la contraseña no aparece.
+- Prueba unitaria nueva.
+- Tabla de diagnóstico en [despliegue.md](despliegue.md#51-si-el-deploy-termina-en-timed-out).
+- **Causa real:** `DATABASE_URL` se cargó en Render **entre comillas**, y Render guarda el valor
+  literal. Al quitarlas, `/health` respondió `ok` en `https://privat-api.onrender.com`.
+- **Prevención:**
+  - `loadConfig` rechaza cualquier variable obligatoria entre comillas.
+  - Exige que `DATABASE_URL` sea una URL `postgresql://` con host.
+  - Así la API falla al arrancar con un mensaje claro, en lugar de esperar 15 minutos hasta el
+    *Timed Out*.
+  - Los mensajes no incluyen el valor.
+- Pruebas: 85/85.

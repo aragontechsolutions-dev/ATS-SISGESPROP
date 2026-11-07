@@ -57,6 +57,22 @@ export function isRateLimitDisabled(env: NodeJS.ProcessEnv = process.env): boole
 function required(env: NodeJS.ProcessEnv, name: string): string {
   const value = env[name]?.trim();
   if (!value) throw new Error(`Variable de entorno requerida no definida: ${name}`);
+  // Los paneles (Render, Vercel) guardan el valor literal: unas comillas pasan a formar parte de él.
+  if (/^["']|["']$/.test(value)) throw new Error(`${name} no debe ir entre comillas`);
+  return value;
+}
+
+/** Cadena de conexión PostgreSQL válida. El mensaje de error nunca incluye el valor (lleva la contraseña). */
+function parseDatabaseUrl(value: string): string {
+  let url: URL | null = null;
+  try {
+    url = new URL(value);
+  } catch {
+    // se informa abajo, sin el valor
+  }
+  if (!url || !['postgresql:', 'postgres:'].includes(url.protocol) || !url.hostname) {
+    throw new Error('DATABASE_URL no es una cadena PostgreSQL válida (debe empezar con postgresql://)');
+  }
   return value;
 }
 
@@ -123,7 +139,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   return {
     nodeEnv,
     port,
-    databaseUrl: required(env, 'DATABASE_URL'),
+    databaseUrl: parseDatabaseUrl(required(env, 'DATABASE_URL')),
     supabaseUrl,
     corsOrigins,
     ipHashSecret,

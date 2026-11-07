@@ -7,7 +7,7 @@ cada paso usa datos del anterior.
 |---|---|---|
 | Código | GitHub (repositorio de PRIVAT) | – |
 | Base de datos y login del panel | Supabase | `https://<proyecto>.supabase.co` |
-| API | Render (región Virginia) | `https://api.privatgp.com` |
+| API | Render (región **Oregon**, la misma que Supabase) | `https://api.privatgp.com` |
 | Web y panel | Vercel | `https://privatgp.com` y `https://privatgp.com/admin/` |
 | Email de avisos | Resend | remitente `avisos@privatgp.com` |
 | Anti-spam del formulario | Cloudflare Turnstile | – |
@@ -15,6 +15,17 @@ cada paso usa datos del anterior.
 > **Nombres de menú:** los paneles de estos servicios cambian con frecuencia. Los nombres de esta
 > guía son orientativos. Los valores (claves, registros DNS, URLs) se copian siempre de la pantalla
 > del servicio; nunca se inventan.
+
+## Decisiones del cliente (06/11/2026)
+
+| Tema | Decisión | Efecto en esta guía |
+|---|---|---|
+| Repositorio | `privatgestor-uy/privat`, **privado**. Código subido el 06/11/2026 | En el plan gratuito de GitHub, los repositorios privados tienen un cupo mensual de minutos de Actions, y la protección de ramas y el *secret scanning* pueden requerir un plan pago. Revisar en *Settings* qué ofrece la cuenta |
+| DNS | Dominio comprado en **GoDaddy**. Los registros se cargan en GoDaddy (*Mis productos → Dominio → DNS*) | Ver "Notas para GoDaddy" en el paso 3 |
+| Cloudflare | El cliente **no tiene cuenta**. Hay que crearla (gratis) solo para Turnstile | El DNS sigue en GoDaddy: no se mueve a Cloudflare |
+| Render | **Plan gratuito por ahora.** Se le insiste al cliente para pasar al pago | El servicio se duerme tras un rato sin tráfico y tarda en despertar (ver paso 5) |
+| Región | Supabase quedó en **Oregon** | Render también en **Oregon** (API y base juntas) |
+| Destinatarios del aviso | `privat.gestor@gmail.com` (confirmado 07/11/2026) | `LEAD_NOTIFY_TO` en Render |
 
 ## 0. Reglas de seguridad para todo el proceso
 
@@ -92,7 +103,9 @@ Desde aquí, Vercel y Render se conectan al **repositorio de PRIVAT**.
 ## 2. Supabase (base de datos y login del panel)
 
 1. Crear el proyecto en la organización del cliente:
-   - Región **East US (North Virginia)**, la misma zona que Render Virginia, para menor latencia.
+   - Región: la API y la base **deben estar en la misma región**, porque cada petición hace varias
+     consultas a la base. El proyecto de PRIVAT quedó en **West US (Oregon)** (07/11/2026), así que
+     Render va en Oregon.
    - Contraseña de la base: larga y aleatoria, guardada en el gestor de contraseñas del cliente.
 2. **Authentication** (configuración):
    - Desactivar el **registro público** (*Allow new users to sign up* en off). El panel solo tiene
@@ -103,6 +116,11 @@ Desde aquí, Vercel y Render se conectan al **repositorio de PRIVAT**.
    *JWT Keys / Signing Keys*. La API solo acepta ES256 o RS256 y verifica con las claves públicas
    (JWKS). Si el proyecto usa el secreto compartido HS256 (*legacy*), hay que migrar a claves
    asimétricas. Si no, el panel responde 401.
+   - **Verificado en el proyecto de PRIVAT (07/11/2026):** la clave en uso (*Current*) es
+     **ECC (P-256)**. La HS256 figura como *Previous*.
+   - En Vercel usar la **clave publicable** (`sb_publishable_…`), no la `anon` legacy (que es un JWT
+     firmado con el secreto HS256).
+   - Ni la API ni la web usan las claves legacy `anon` o `service_role`.
 4. Anotar estos valores (en *Connect* / *API settings*):
    - `SUPABASE_URL`: `https://<proyecto>.supabase.co`.
    - **Clave publicable** (`anon` o `sb_publishable_…`). Va en Vercel. Es pública por diseño.
@@ -110,23 +128,48 @@ Desde aquí, Vercel y Render se conectan al **repositorio de PRIVAT**.
    - Cadena del **session pooler** (puerto **5432**) → `DIRECT_URL`, solo para migraciones. Se
      recomienda el session pooler y no la conexión directa porque esta puede requerir IPv6.
    - No hace falta agregar `?pgbouncer=true`: el driver `pg` lo ignora.
-5. Ejecutar las migraciones y los datos iniciales **desde la laptop**:
-   ```bash
-   cd apps/api
+5. Ejecutar las migraciones y los datos iniciales **desde la laptop**, con Node 24.22.1.
+   No se crea ningún archivo `.env`: la cadena de conexión se pide en la terminal, vive solo en esa
+   sesión y se borra al terminar. Si la contraseña de la base tiene caracteres especiales
+   (`@ : / ? # [ ] %`), van codificados en la URL (por ejemplo, `@` → `%40`). Lo más simple es una
+   contraseña solo con letras y números, pero larga (32 o más).
+
+   **Windows (PowerShell)**, desde la raíz del repositorio (`C:\dev\privat`):
+   ```powershell
+   node -v
    ```
+   ```powershell
+   npm ci --ignore-scripts
+   ```
+   ```powershell
+   $env:DIRECT_URL = Read-Host "Cadena del session pooler (5432)"
+   ```
+   Lo que se escribe en `Read-Host` no queda en el historial de PowerShell.
+   ```powershell
+   cd apps\api
+   ```
+   ```powershell
+   npm run db:migrate
+   ```
+   ```powershell
+   npm run db:seed
+   ```
+   ```powershell
+   Remove-Item Env:DIRECT_URL
+   ```
+
+   **Linux o macOS (bash)**, desde la raíz del repositorio:
    ```bash
    npm ci --ignore-scripts
    ```
-   Crear `apps/api/.env` con una sola línea, `DIRECT_URL=<cadena del session pooler>`. Cargarla
-   en la terminal sin que quede en el historial:
    ```bash
-   set -a; . ./.env; set +a
+   read -rs -p "Cadena del session pooler (5432): " DIRECT_URL && export DIRECT_URL
    ```
    ```bash
-   npm run db:migrate
+   cd apps/api && npm run db:migrate && npm run db:seed
    ```
    ```bash
-   npm run db:seed
+   unset DIRECT_URL
    ```
    - `db:migrate` crea las 17 tablas y aplica la seguridad (RLS deny-all y REVOKE a `anon` y
      `authenticated`).
@@ -141,23 +184,45 @@ Desde aquí, Vercel y Render se conectan al **repositorio de PRIVAT**.
    ```
    La primera consulta debe devolver 11. La segunda debe mostrar `relrowsecurity = true` en todas
    las tablas.
-7. Borrar `apps/api/.env` de la laptop:
-   ```bash
-   rm apps/api/.env
-   ```
+7. Si en algún momento creaste un `apps/api/.env` en la laptop, bórralo. Está en `.gitignore`,
+   pero no debe quedar ahí.
 
 ## 3. Resend (email de avisos)
 
 1. Crear la cuenta (o entrar a la del cliente) y agregar el dominio **privatgp.com**.
 2. Cargar en el DNS del dominio **exactamente** los registros que muestra Resend: SPF/MX del
    subdominio de envío y DKIM. Esperar a que figure como *Verified*.
-3. Recomendado: un registro **DMARC** para el dominio, por ejemplo `_dmarc.privatgp.com` con
-   `v=DMARC1; p=none; rua=mailto:<email del cliente>`. Se endurece más adelante.
+   **Notas para GoDaddy** (valen también para los registros de Vercel y Render):
+   - En el campo *Nombre/Host*, GoDaddy agrega el dominio solo. Se escribe `send`, no
+     `send.privatgp.com`; para el dominio raíz se usa `@`.
+   - Antes de cargar los registros de Vercel, borra cualquier registro `A` de `@` que apunte a
+     "Parked", así como el *reenvío de dominio* (forwarding), si está activado.
+   - Si el dominio ya tiene correo (MX en `@`), **no lo toques**. Resend usa el subdominio de envío.
+   - Los cambios pueden tardar desde minutos hasta horas en verse.
+3. **DMARC: un solo registro `_dmarc`.** Si hay dos o más, los receptores ignoran DMARC por
+   completo (RFC 7489).
+   - **Estado en privatgp.com (07/11/2026):** GoDaddy ya había creado uno:
+     `v=DMARC1; p=quarantine; adkim=r; aspf=r; rua=mailto:…@onsecureserver.net`. Se agregó otro por
+     error y se indicó borrarlo.
+   - **Se mantiene el de GoDaddy (`p=quarantine`).** Los avisos de Resend pasan porque van firmados
+     con DKIM de `privatgp.com` y la alineación es relajada (`adkim=r`). Confirmar en la verificación
+     final que el aviso no llegue a spam.
+   - **Advertencia a futuro:** si el cliente envía correo desde @privatgp.com con otro servicio
+     (por ejemplo Google Workspace), antes hay que configurar el SPF y el DKIM de ese servicio. Si
+     no, con `p=quarantine` esos correos van a spam.
+   - **Comprobar** desde PowerShell: `Resolve-DnsName -Type TXT _dmarc.privatgp.com` (debe aparecer
+     uno solo).
+   - **Enable receiving** en Resend: apagado. El dominio no tiene MX (no recibe correo) y no debe
+     apuntar a Resend.
 4. Crear una **API key** con permiso **Sending access** restringido al dominio privatgp.com. No
    usar *Full access*. Se copia una sola vez y se pega directamente en Render (paso 5).
 5. Definir:
-   - **Remitente:** `PRIVAT <avisos@privatgp.com>`.
-   - **Destinatarios:** los emails del equipo, de 1 a 10.
+   - **Remitente:** `PRIVAT <avisos@privatgp.com>`. Resend envía desde ahí sin que exista un buzón
+     con ese nombre. Las respuestas a ese correo no llegarían a nadie, y por eso el aviso no
+     invita a responder.
+   - **Destinatarios:** de 1 a 10 **buzones reales** que el equipo lea; nunca direcciones
+     inventadas. Mientras el cliente no defina otros, se usa el email del administrador del
+     panel. Se cambia cuando quieras editando `LEAD_NOTIFY_TO` en Render, sin tocar el código.
 
 **Privacidad:** el aviso **no incluye datos del visitante**. Solo avisa que hay una consulta nueva y
 enlaza al panel, donde se ve con 2FA. Así los datos personales no pasan por el proveedor de email
@@ -165,7 +230,9 @@ enlaza al panel, donde se ve con 2FA. Así los datos personales no pasan por el 
 
 ## 4. Cloudflare Turnstile (anti-spam)
 
-Requiere una cuenta de Cloudflare. Es gratuita y **no** obliga a mover el DNS a Cloudflare.
+Requiere una cuenta de Cloudflare. El cliente no tiene una: hay que crearla con un email del
+cliente y 2FA activado. Es gratuita y **no** obliga a mover el DNS a Cloudflare: el dominio sigue
+en GoDaddy.
 
 1. En *Turnstile*, agregar un widget con los hostnames `privatgp.com` y `www.privatgp.com`, en modo
    *Managed*.
@@ -177,9 +244,14 @@ Requiere una cuenta de Cloudflare. Es gratuita y **no** obliga a mover el DNS a 
 
 1. *New → Web Service*. Conectar el **repositorio de PRIVAT**, rama `main`.
 2. Configuración:
-   - Región **Virginia (US East)**.
+   - Región **Oregon (US West)**, la misma que Supabase. No elegir otra.
    - Runtime **Node**.
-   - Plan **pago**. En el plan gratuito el servicio se duerme y la primera visita tarda.
+   - Plan **pago** (recomendado). El cliente arranca con el **gratuito**. Consecuencias:
+     - El servicio se duerme sin tráfico, y la primera visita después de eso tarda en responder.
+     - El cotizador y el formulario pueden demorar en esa primera llamada.
+     - El build de Vercel reintenta la lectura del contenido durante unos 90 s (6 intentos ×
+       15 s, ADR-014), justamente para dar tiempo a que Render despierte.
+     - Pasar al plan pago es un cambio de plan en Render; no hay que tocar nada del código.
    - *Root directory*: vacío (la raíz del monorepo).
    - *Build command*:
      ```bash
@@ -207,11 +279,14 @@ Requiere una cuenta de Cloudflare. Es gratuita y **no** obliga a mover el DNS a 
    | `TURNSTILE_ALLOWED_HOSTNAMES` | `privatgp.com,www.privatgp.com` |
    | `RESEND_API_KEY` | API key de Resend |
    | `LEAD_NOTIFY_FROM` | `PRIVAT <avisos@privatgp.com>` |
-   | `LEAD_NOTIFY_TO` | Emails del equipo, separados por coma |
+   | `LEAD_NOTIFY_TO` | `privat.gestor@gmail.com` (más emails, separados por coma) |
+   | `NODE_VERSION` | `24.22.1` (fija la versión de Node en Render) |
    | `PANEL_URL` | `https://privatgp.com/admin/` |
    | `VERCEL_DEPLOY_HOOK_URL` | Se completa en el paso 6.5 |
 
-   `PORT` no se define: la asigna Render, y la API escucha en `0.0.0.0:$PORT`.
+   - **Los valores se pegan sin comillas**, ni simples ni dobles. Render los guarda tal cual. Si
+     una variable obligatoria va entre comillas, la API no arranca y lo indica en el log.
+   - `PORT` no se define: la asigna Render, y la API escucha en `0.0.0.0:$PORT`.
 
    Para generar `IP_HASH_SECRET` en la laptop:
    ```bash
@@ -220,7 +295,7 @@ Requiere una cuenta de Cloudflare. Es gratuita y **no** obliga a mover el DNS a 
    Pégalo directamente en Render. Una vez en uso, no se cambia: cambiarlo invalida la agrupación
    de IPs ya guardadas.
 4. Primer deploy. En el log, comprobar:
-   - Que use **Node 24.22.1**. Render lee `.node-version`; si no, definir `NODE_VERSION=24.22.1`.
+   - Que use **Node 24.22.1** (`NODE_VERSION` lo fija explícitamente).
    - Que termine con la API escuchando.
 5. Probar:
    ```bash
@@ -228,6 +303,36 @@ Requiere una cuenta de Cloudflare. Es gratuita y **no** obliga a mover el DNS a 
    ```
 6. **Dominio propio:** en *Settings → Custom Domains*, agregar `api.privatgp.com`. Cargar en el DNS
    el registro que indique Render (CNAME) y esperar el certificado TLS.
+
+### 5.1 Si el deploy termina en *Timed Out*
+
+Render da el deploy por bueno cuando `/health` responde 200. `/health` hace `SELECT 1` en la base:
+si la base no responde, devuelve 503 y, a los 15 minutos, Render corta con *Timed Out*, aunque el
+log diga *Nest application successfully started*. Casi siempre es `DATABASE_URL`.
+
+Desde el 07/11/2026 la API registra la causa en el log, **una vez** por cada cambio de estado, sin la
+URL ni la contraseña. Por ejemplo:
+`[Health] Base de datos no disponible (P2010: … Code: 28P01 … password authentication failed …)`.
+
+| Código o texto en el log | Causa probable |
+|---|---|
+| Cadena entre comillas (`"postgresql://…"`) | Render guarda el valor literal, comillas incluidas. **Caso real del 07/11/2026.** Desde entonces la API no arranca y avisa `DATABASE_URL no debe ir entre comillas` |
+| `28P01` / `password authentication failed` | Contraseña incorrecta, o quedó el texto `[YOUR-PASSWORD]` de la plantilla |
+| `Tenant or user not found` | Usuario o host del pooler equivocados. El usuario del pooler es `postgres.<id-del-proyecto>` |
+| `ENOTFOUND` / `Can't reach database server` | Host mal escrito o conexión directa (IPv6). Usar el *pooler* |
+| `ETIMEDOUT` | Puerto o host incorrectos: el transaction pooler usa el puerto **6543** |
+| URL inválida | Caracteres especiales de la contraseña sin codificar (`@` → `%40`, `#` → `%23`, etc.) |
+
+Prueba de la cadena desde la laptop, en PowerShell y en la raíz del repositorio:
+```powershell
+$env:DATABASE_URL = Read-Host "Cadena del transaction pooler (6543)"
+```
+```powershell
+node -e "const {Client}=require('pg'); const c=new Client({connectionString:process.env.DATABASE_URL}); c.connect().then(()=>c.query('select 1')).then(()=>{console.log('CONEXION OK'); return c.end()}).catch(e=>{console.error('ERROR', e.code, e.message); process.exit(1)})"
+```
+```powershell
+Remove-Item Env:DATABASE_URL
+```
 
 ## 6. Vercel (web y panel)
 
@@ -305,6 +410,15 @@ Requiere una cuenta de Cloudflare. Es gratuita y **no** obliga a mover el DNS a 
 ## 9. Después del despliegue
 
 - El cliente cambia las contraseñas compartidas y revisa los miembros de cada servicio.
+- **Supabase, claves legacy:** con el panel ya verificado en producción, desactivar las API keys
+  basadas en JWT (`anon` y `service_role` legacy) en *Settings → API Keys*. Después, cuando hayan
+  vencido los tokens viejos, revocar la clave HS256 *Previous* en *JWT Keys*. Así deja de existir
+  un secreto compartido capaz de firmar tokens válidos para Supabase.
+- **Supabase, plan gratuito:**
+  - Según la política publicada por Supabase, los proyectos gratuitos pueden pausarse por
+    inactividad y no incluyen copias de seguridad diarias.
+  - Revisar las condiciones vigentes en su web y proponer al cliente el plan Pro antes de cargar
+    datos reales.
 - Actualizar la nota "Repositorio de trabajo" del `README.md`.
 - Decidir el destino del repositorio de Aragon Tech Solutions: archivar o mantener como copia
   (pregunta M-3).

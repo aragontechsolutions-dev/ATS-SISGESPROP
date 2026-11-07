@@ -10,7 +10,7 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 | ★ P-3 | Regla del viático: ¿USD 0,35/km? ¿radio sin cargo? ¿tramos? Si son tramos: ¿monto por visita o por mes? | Modo por km con valores iniciales del plan (0 km de radio, 0,35 USD/km); modo por tramos bloqueado |
 | ★ P-5 | Valores de los 15 perfiles (5 tipos × 3 niveles) | Sin perfiles, el cotizador responde 404 para esa combinación |
 | P-4 | 3 o 4 trayectos reales con km por carretera | El factor de ruta queda en 1,3 (propuesto, sin calibrar) |
-| ★ P-16 | Cuentas a nombre del cliente. **Recibidas (06/11/2026):** dominio privatgp.com, GitHub, Render, Vercel, Supabase y Resend. **Faltan:** Cloudflare (Turnstile), proveedor DNS del dominio, plan de Render y emails que reciben los avisos | Despliegue según [despliegue.md](despliegue.md) |
+| ★ P-16 | Cuentas a nombre del cliente. **Recibidas (06/11/2026):** dominio privatgp.com, GitHub, Render, Vercel, Supabase y Resend. Repositorio `privatgestor-uy/privat` (privado), código subido. DNS en **GoDaddy**. Render en plan **gratuito** por ahora (se recomienda el pago). **Faltan:** crear la cuenta de Cloudflare (Turnstile) y definir los buzones que reciben los avisos (mientras tanto, el email del administrador) | Despliegue según [despliegue.md](despliegue.md) |
 
 ## Necesarios para los próximos bloques
 
@@ -27,7 +27,7 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 | P-12 | Botón "Acceso Clientes": ¿oculto o "Próximamente"? | C |
 | ★ P-15 | Asesor legal: política de privacidad, inscripción URCDP; póliza de RC (el sello no se publica sin ella) | C (formulario) |
 | ★ P-17 | Persona que aprueba vistas previas (48 h) | Todos |
-| P-16b | Repositorio GitHub propio de PRIVAT (el cliente lo está creando). Mientras tanto se trabaja en `aragontechsolutions-dev/ATS-SISGESPROP` | Traspaso |
+| P-16b | ~~Repositorio GitHub propio de PRIVAT~~ → `privatgestor-uy/privat` (privado, 06/11/2026). El desarrollo sigue en `aragontechsolutions-dev/ATS-SISGESPROP` y se lleva desde la laptop | Traspaso |
 
 ## Preguntas nuevas (documentos del 04/11/2026, ver [análisis](analisis-documentos-cliente-2026-11-04.md))
 
