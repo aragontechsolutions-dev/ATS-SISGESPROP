@@ -235,3 +235,7 @@ emails de destino).
   con `p=quarantine` y el otro se agregó por error con `p=none`.
 - **Decisión:** se mantiene el de GoDaddy y se borra el duplicado.
 - **A verificar en el primer envío real:** que el aviso no llegue a spam.
+- DMARC: confirmado contra el DNS autoritativo de GoDaddy (`ns41.domaincontrol.com`). Queda un solo
+  registro (`p=quarantine`).
+- Turnstile y API key de Resend creados por el usuario. Las claves no se compartieron en el chat.
+- Destinatario de los avisos: `privat.gestor@gmail.com`.

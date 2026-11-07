@@ -25,7 +25,7 @@ cada paso usa datos del anterior.
 | Cloudflare | El cliente **no tiene cuenta**. Hay que crearla (gratis) solo para Turnstile | El DNS sigue en GoDaddy: no se mueve a Cloudflare |
 | Render | **Plan gratuito por ahora.** Se le insiste al cliente para pasar al pago | El servicio se duerme tras un rato sin tráfico y tarda en despertar (ver paso 5) |
 | Región | Supabase quedó en **Oregon** | Render también en **Oregon** (API y base juntas) |
-| Destinatarios del aviso | Pendiente: deben ser buzones reales del equipo | Ver paso 3 |
+| Destinatarios del aviso | `privat.gestor@gmail.com` (confirmado 07/11/2026) | `LEAD_NOTIFY_TO` en Render |
 
 ## 0. Reglas de seguridad para todo el proceso
 
@@ -279,7 +279,8 @@ en GoDaddy.
    | `TURNSTILE_ALLOWED_HOSTNAMES` | `privatgp.com,www.privatgp.com` |
    | `RESEND_API_KEY` | API key de Resend |
    | `LEAD_NOTIFY_FROM` | `PRIVAT <avisos@privatgp.com>` |
-   | `LEAD_NOTIFY_TO` | Emails del equipo, separados por coma |
+   | `LEAD_NOTIFY_TO` | `privat.gestor@gmail.com` (más emails, separados por coma) |
+   | `NODE_VERSION` | `24.22.1` (fija la versión de Node en Render) |
    | `PANEL_URL` | `https://privatgp.com/admin/` |
    | `VERCEL_DEPLOY_HOOK_URL` | Se completa en el paso 6.5 |
 
@@ -292,7 +293,7 @@ en GoDaddy.
    Pégalo directamente en Render. Una vez en uso, no se cambia: cambiarlo invalida la agrupación
    de IPs ya guardadas.
 4. Primer deploy. En el log, comprobar:
-   - Que use **Node 24.22.1**. Render lee `.node-version`; si no, definir `NODE_VERSION=24.22.1`.
+   - Que use **Node 24.22.1** (`NODE_VERSION` lo fija explícitamente).
    - Que termine con la API escuchando.
 5. Probar:
    ```bash
