@@ -7,7 +7,7 @@ cada paso usa datos del anterior.
 |---|---|---|
 | Código | GitHub (repositorio de PRIVAT) | – |
 | Base de datos y login del panel | Supabase | `https://<proyecto>.supabase.co` |
-| API | Render (región Virginia) | `https://api.privatgp.com` |
+| API | Render (región **Oregon**, la misma que Supabase) | `https://api.privatgp.com` |
 | Web y panel | Vercel | `https://privatgp.com` y `https://privatgp.com/admin/` |
 | Email de avisos | Resend | remitente `avisos@privatgp.com` |
 | Anti-spam del formulario | Cloudflare Turnstile | – |
@@ -24,6 +24,7 @@ cada paso usa datos del anterior.
 | DNS | Dominio comprado en **GoDaddy**. Los registros se cargan en GoDaddy (*Mis productos → Dominio → DNS*) | Ver "Notas para GoDaddy" en el paso 3 |
 | Cloudflare | El cliente **no tiene cuenta**. Hay que crearla (gratis) solo para Turnstile | El DNS sigue en GoDaddy: no se mueve a Cloudflare |
 | Render | **Plan gratuito por ahora.** Se le insiste al cliente para pasar al pago | El servicio se duerme tras un rato sin tráfico y tarda en despertar (ver paso 5) |
+| Región | Supabase quedó en **Oregon** | Render también en **Oregon** (API y base juntas) |
 | Destinatarios del aviso | Pendiente: deben ser buzones reales del equipo | Ver paso 3 |
 
 ## 0. Reglas de seguridad para todo el proceso
@@ -102,7 +103,9 @@ Desde aquí, Vercel y Render se conectan al **repositorio de PRIVAT**.
 ## 2. Supabase (base de datos y login del panel)
 
 1. Crear el proyecto en la organización del cliente:
-   - Región **East US (North Virginia)**, la misma zona que Render Virginia, para menor latencia.
+   - Región: la API y la base **deben estar en la misma región**, porque cada petición hace varias
+     consultas a la base. El proyecto de PRIVAT quedó en **West US (Oregon)** (07/11/2026), así que
+     Render va en Oregon.
    - Contraseña de la base: larga y aleatoria, guardada en el gestor de contraseñas del cliente.
 2. **Authentication** (configuración):
    - Desactivar el **registro público** (*Allow new users to sign up* en off). El panel solo tiene
@@ -228,7 +231,7 @@ en GoDaddy.
 
 1. *New → Web Service*. Conectar el **repositorio de PRIVAT**, rama `main`.
 2. Configuración:
-   - Región **Virginia (US East)**.
+   - Región **Oregon (US West)**, la misma que Supabase. No elegir otra.
    - Runtime **Node**.
    - Plan **pago** (recomendado). El cliente arranca con el **gratuito**. Consecuencias:
      - El servicio se duerme sin tráfico, y la primera visita después de eso tarda en responder.

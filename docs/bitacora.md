@@ -215,3 +215,12 @@ emails de destino).
   - se usa la clave publicable;
   - tras el despliegue, desactivar las claves legacy y revocar la HS256;
   - se suma una advertencia sobre el plan gratuito de Supabase.
+- Supabase quedó en **Oregon (us-west)**, no en Virginia como se había previsto.
+- **Decisión:** Render también va en **Oregon**, para que la API y la base estén en la misma región.
+  Cada petición hace varias consultas a la base, así que esa latencia es la que más pesa.
+- La distancia extra del visitante en Uruguay hasta Oregon se paga una sola vez por petición, y
+  la landing se sirve desde la CDN de Vercel.
+- Así se evita recrear el proyecto de Supabase.
+- Configuración de Auth confirmada por el usuario: registro público desactivado, TOTP habilitado y
+  *Site URL* `https://privatgp.com`.
+- Migraciones y seed: el usuario indicó que todo lo demás está OK.
