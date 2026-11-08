@@ -306,3 +306,31 @@ emails de destino).
 - Confirmar cada paso con su comprobación (`count(*)` de `content_block` = 11 y RLS activa), y no con
   un "OK" general.
 - Pendiente evaluar si `/health` debería comprobar también que existe el esquema.
+
+## 2026-11-08 – Migraciones automáticas en el build de Render
+
+**Contexto**
+- Desde la laptop, `prisma migrate deploy` fallaba con *"datasource.url property is required"*:
+  `DIRECT_URL` no llegaba a la variable de entorno de la terminal. Se probó `Read-Host` y el
+  portapapeles, sin éxito.
+- El usuario pidió automatizarlo en Render.
+
+**Hecho**
+- **Nuevos scripts:**
+  - `db:deploy`: `db:migrate` seguido de `db:seed`.
+  - `db:check-url`: `scripts/check-direct-url.mjs`, también previo a `db:migrate` y `db:seed`.
+- **La comprobación de `DIRECT_URL`:**
+  - falla con un mensaje claro si la variable falta, va entre comillas, no es `postgresql://` o
+    usa el puerto 6543;
+  - nunca imprime el valor.
+- **Render:** el Build Command termina con `npm run db:deploy -w @ats/api`, y se agrega la variable
+  `DIRECT_URL` (session pooler).
+
+**Verificado con una base vacía**
+- Primer deploy:
+  - 3 migraciones aplicadas;
+  - 11 bloques de contenido;
+  - 18 tablas, todas con RLS.
+- Segundo deploy: *No pending migrations*; el seed no cambia nada.
+- Un bloque editado se conserva después del seed.
+- Pruebas de la API: 85/85.

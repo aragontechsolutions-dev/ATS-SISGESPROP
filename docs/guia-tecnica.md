@@ -332,7 +332,9 @@ traspaso del código, Supabase, Resend, Turnstile, Render, Vercel, administrador
 verificación final.
 
 Resumen:
-- **API en Render:** build con `npm ci --include=dev --ignore-scripts && npm run build -w @ats/pricing && npm run build -w @ats/api`.
+- **API en Render:** build con `npm ci --include=dev --ignore-scripts && npm run build -w @ats/pricing && npm run build -w @ats/api && npm run db:deploy -w @ats/api`.
+  - `db:deploy` aplica las migraciones y el seed (idempotente) con `DIRECT_URL`.
+  - `scripts/check-direct-url.mjs` comprueba antes la variable, con un mensaje claro y sin mostrar su valor.
   - `--include=dev` hace falta porque con `NODE_ENV=production` npm omite TypeScript y Prisma.
   - Start con `npm start -w @ats/api`.
   - Health check en `/health`.

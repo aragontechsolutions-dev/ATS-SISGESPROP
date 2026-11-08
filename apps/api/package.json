@@ -13,8 +13,10 @@
     "typecheck": "npm run prisma:generate && tsc -p tsconfig.json --noEmit",
     "test": "npm run prisma:generate && tsc -p tsconfig.json && node --test --test-concurrency=1 --test-timeout=30000 \"dist-test/test/**/*.test.js\"",
     "start": "node dist/src/main.js",
-    "db:migrate": "prisma migrate deploy",
-    "db:seed": "prisma db execute --file prisma/seed.sql"
+    "db:check-url": "node scripts/check-direct-url.mjs",
+    "db:migrate": "node scripts/check-direct-url.mjs && prisma migrate deploy",
+    "db:seed": "node scripts/check-direct-url.mjs && prisma db execute --file prisma/seed.sql",
+    "db:deploy": "npm run db:migrate && npm run db:seed"
   },
   "devDependencies": {
     "@nestjs/testing": "12.3.2",

@@ -283,10 +283,23 @@ en GoDaddy.
    - *Root directory*: vacío (la raíz del monorepo).
    - *Build command*:
      ```bash
-     npm ci --include=dev --ignore-scripts && npm run build -w @ats/pricing && npm run build -w @ats/api
+     npm ci --include=dev --ignore-scripts && npm run build -w @ats/pricing && npm run build -w @ats/api && npm run db:deploy -w @ats/api
      ```
-     `--include=dev` es necesario: con `NODE_ENV=production`, npm omite las devDependencies
-     (TypeScript, Prisma CLI) y el build falla. Verificado en una simulación limpia.
+     - `--include=dev` es necesario: con `NODE_ENV=production`, npm omite las devDependencies
+       (TypeScript, Prisma CLI) y el build falla. Verificado en una simulación limpia.
+     - **`db:deploy` (desde el 08/11/2026)** aplica las migraciones pendientes y el seed en cada
+       deploy. Necesita `DIRECT_URL` en las variables de Render.
+       - Si la base ya está al día, no hace nada.
+       - El seed usa `ON CONFLICT DO NOTHING`, así que nunca pisa lo editado en el panel
+         (verificado).
+       - Si falla, el build falla y **sigue funcionando la versión anterior**.
+     - En el plan gratuito de Render no hay *Pre-Deploy Command* (según su documentación, es de
+       planes pagos). Por eso las migraciones van en el build. Contrapartida: si la migración
+       sale bien pero el deploy falla después, la versión anterior queda corriendo sobre el esquema
+       nuevo. Las migraciones deben ser **compatibles hacia atrás** (agregar, no borrar ni
+       renombrar en el mismo paso).
+     - **Con plan pago:** mover `npm run db:deploy -w @ats/api` al *Pre-Deploy Command* y
+       quitarlo del build.
    - *Start command*:
      ```bash
      npm start -w @ats/api
@@ -310,6 +323,7 @@ en GoDaddy.
    | `LEAD_NOTIFY_TO` | `privat.gestor@gmail.com` (más emails, separados por coma) |
    | `NODE_VERSION` | `24.22.1` (fija la versión de Node en Render) |
    | `PANEL_URL` | `https://privatgp.com/admin/` |
+   | `DIRECT_URL` | Cadena del **session pooler** de Supabase (:5432). La usan las migraciones del build. Mismo usuario y contraseña que `DATABASE_URL`, así que no agrega exposición |
    | `VERCEL_DEPLOY_HOOK_URL` | Se completa en el paso 6.5 |
 
    - **Los valores se pegan sin comillas**, ni simples ni dobles. Render los guarda tal cual. Si
