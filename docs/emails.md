@@ -34,9 +34,9 @@ Si en el futuro se usa alguna, hay que diseñarla con estas mismas reglas y suma
   | Gris `#686B67` | Texto secundario |
   | Borde `#E2DED5` | Bordes |
 
-- **Marca:** "PRIVAT" en texto con espaciado amplio, igual que la web, hasta que llegue el logo
-  (P-1). Cuando llegue, se puede agregar como imagen **alojada en privatgp.com**, nunca en un
-  servicio de terceros.
+- **Marca:** "PRIVAT" en texto con espaciado amplio. El logo ya llegó ([marca.md](marca.md)), pero en los emails se mantiene el texto hasta decidirlo con el cliente.
+  Si se agrega, irá como PNG **alojado en privatgp.com**, nunca en un servicio de terceros, y con el
+  texto como respaldo.
 - **Reglas de email HTML:**
   - tablas y estilos **en línea**, porque muchos clientes de correo ignoran `<style>`;
   - fuentes del sistema;

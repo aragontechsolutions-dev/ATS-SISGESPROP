@@ -427,3 +427,26 @@ emails de destino).
   - el sitio depende de la cuenta del desarrollador;
   - hay dos repositorios que mantener iguales (`git pushall`).
 - Plan de migración en [despliegue.md](despliegue.md), sección 6.1.
+
+## 2026-11-08 – Logo de PRIVAT en la web y el panel
+
+**Contexto**
+- El cliente entregó `logo_Privat_05112026.pdf`, que es vectorial.
+- La web pasó a la cuenta de Vercel del desarrollador (decisión del cliente, informado de lo que
+  implica).
+
+**Hecho**
+- Se extrajeron del PDF el logotipo (en blanco y en verde) y el círculo verde oficial, sin
+  redibujar nada ([marca.md](marca.md)).
+- **Landing:** logotipo blanco en el menú y en el pie.
+- **Panel:** logotipo verde en el login y blanco en el encabezado.
+- **Favicon:** el círculo oficial.
+- **`apple-touch-icon.png`:** nuevo, de 180 px.
+- Componente `Logo` con `<img>` estático: sin cambios en la CSP y sin peso extra en el JavaScript.
+
+**Verificado (e2e en limpio)**
+- Landing 12/12, panel 19/19 y accesibilidad 17/17.
+- Capturas en escritorio y móvil.
+
+**Pendiente con el cliente:** tipografía, logo en los emails, imagen para redes y uso de la versión
+dorada.

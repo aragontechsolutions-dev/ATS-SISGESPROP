@@ -16,7 +16,7 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 
 | Ref. | Dato | Bloque |
 |---|---|---|
-| ★ P-1 | ~~Nombre comercial~~ → **PRIVAT** (confirmado 04/11/2026). ~~Dominio~~ → **privatgp.com** (06/11/2026). Falta: logo vectorial | C (landing) |
+| ★ P-1 | ~~Nombre comercial~~ → **PRIVAT** (confirmado 04/11/2026). ~~Dominio~~ → **privatgp.com** (06/11/2026). ~~Logo~~ → recibido (08/11/2026) e implementado en la web y el panel ([marca.md](marca.md)) | C (landing) |
 | ★ P-13 / P-13b | Textos de la landing; fotos con derecho de uso (1 hero + 3 servicios) | C |
 | P-13c | Testimonios reales autorizados (si no hay, la sección se oculta) | C |
 | ★ P-14 | Teléfono, WhatsApp, email de consultas, dirección, redes | C |
@@ -45,8 +45,7 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 - **Textos de la landing:** son provisorios, tomados del Documento Maestro y adaptados por el desarrollo
   en Transparencia, Cobertura y Contacto. El "límite de gasto" se redactó sin cifra (el documento dice
   "ej. USD 500").
-- **Tipografía:** se usa la del sistema (cero descargas) hasta definir la identidad visual del logo (P-1).
-- **Marca sin logo:** "PRIVAT" se muestra como texto con espaciado amplio y el favicon es genérico hasta recibir el logo vectorial.
+- **Tipografía:** se usa la del sistema (cero descargas). El logo ya llegó: falta que el cliente confirme si quiere unificar la tipografía de la web ([marca.md](marca.md)).
 - **Hero:** fondo verde con líneas arquitectónicas en SVG hasta tener la fotografía (P-13b).
 
 ## Pendiente técnico del Bloque D
