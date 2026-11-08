@@ -153,10 +153,12 @@ Desde aquí, Vercel y Render se conectan al **repositorio de PRIVAT**.
         - remitente `no-responder@privatgp.com`, nombre `PRIVAT`.
 
         Confirmar los datos de SMTP en la documentación de Resend al configurarlo.
-     2. **Plantilla *Reset Password*** (*Authentication → Emails → Templates*). Debe mostrar
-        `{{ .Token }}` y **no** incluir `{{ .ConfirmationURL }}`. Por ejemplo:
-        - Asunto: `Código para recuperar tu contraseña – PRIVAT`
-        - Cuerpo: `<p>Tu código para recuperar la contraseña del panel de PRIVAT es:</p><p><strong>{{ .Token }}</strong></p><p>Vence en 15 minutos. Si no lo pediste, ignora este correo: sin tu app autenticadora nadie puede cambiar la contraseña.</p>`
+     2. **Plantilla *Reset Password*** (*Authentication → Emails → Templates*), con la identidad de
+        PRIVAT:
+        - **Asunto:** `Código para recuperar tu contraseña – PRIVAT`
+        - **Cuerpo:** el contenido **completo** de
+          [`supabase/templates/reset-password.html`](../supabase/templates/reset-password.html).
+          Muestra `{{ .Token }}` y no tiene enlaces. Instrucciones en [emails.md](emails.md).
      3. **Vencimiento del código** (*Email OTP Expiration*): `900` segundos (15 minutos).
      4. **Largo mínimo de contraseña** (*Authentication → Providers → Email*, o *Auth → Password
         settings*): `12`, igual que el panel. Si el plan lo permite, activar también la detección

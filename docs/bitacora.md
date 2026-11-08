@@ -362,3 +362,26 @@ emails de destino).
 **Pendiente en Supabase para que funcione en producción**
 - SMTP con Resend, plantilla *Reset Password* con `{{ .Token }}`, vencimiento del código y largo
   mínimo de contraseña. Ver [despliegue.md](despliegue.md), paso 2.
+
+## 2026-11-08 – Plantillas de email con la identidad visual
+
+**Inventario**
+- El sistema usa **dos** correos:
+  - el aviso de consulta nueva (API → Resend);
+  - el código de recuperación de contraseña (Supabase Auth).
+- Las demás plantillas de Supabase no se usan; el motivo de cada una está en
+  [emails.md](emails.md).
+
+**Hecho**
+- `apps/api/src/leads/lead-email.ts`: el diseño del aviso, separado de `resend-notifier.ts`.
+  - Cabecera verde con "PRIVAT", línea dorada y botón "Ver la consulta en el panel".
+  - Versión de texto plano.
+  - Valores escapados.
+- `supabase/templates/reset-password.html`: mismo diseño, con el código en un recuadro destacado.
+- Al escribir la plantilla de Supabase se detectó un riesgo: tenía un comentario con
+  `{{ .ConfirmationURL }}`, y el motor de Go lo habría procesado. Se quitó, y una prueba exige que
+  solo exista `{{ .Token }}`.
+
+**Verificado**
+- 3 pruebas nuevas; API 88/88.
+- Vista previa en escritorio y móvil (390 px), sin scroll horizontal.

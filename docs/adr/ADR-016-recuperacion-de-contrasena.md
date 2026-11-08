@@ -30,6 +30,8 @@ plantilla del email).
    - el estado se anuncia a lectores de pantalla;
    - solo cambia el `type` del campo en el navegador.
 
+**Plantilla del email:** `supabase/templates/reset-password.html`, con la identidad de PRIVAT ([emails.md](../emails.md)).
+
 **Configuración necesaria en Supabase** ([despliegue.md](../despliegue.md), paso 2):
 - plantilla *Reset Password* con `{{ .Token }}` y **sin** `{{ .ConfirmationURL }}`;
 - SMTP propio con Resend;
