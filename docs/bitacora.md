@@ -414,3 +414,16 @@ emails de destino).
 - **Recomendación al cliente:** Pro y agregar al desarrollador como miembro. Alternativa sin
   verificar: que los merges los haga la cuenta de GitHub del cliente.
 - La URL del hook se guarda igual en Render (`VERCEL_DEPLOY_HOOK_URL`).
+
+## 2026-11-08 – Decisión: web temporalmente en la cuenta de Vercel del desarrollador
+
+- **Decisión del cliente:** alojar la web en la cuenta del desarrollador hasta poder pagar Pro.
+- **Por qué funciona:** el proyecto se conecta al repositorio del desarrollador, cuyos merges hace
+  él mismo. Así se evita el bloqueo de Hobby por autor del commit, y el deploy hook (el botón
+  "Publicar") debería funcionar. Se verifica en el paso 2 de la migración.
+- **Riesgos comunicados:**
+  - Hobby no admite uso comercial, según los términos de Vercel que conocemos; se recomendó
+    dejarlo por escrito con el cliente;
+  - el sitio depende de la cuenta del desarrollador;
+  - hay dos repositorios que mantener iguales (`git pushall`).
+- Plan de migración en [despliegue.md](despliegue.md), sección 6.1.
