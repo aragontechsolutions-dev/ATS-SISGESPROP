@@ -265,3 +265,12 @@ emails de destino).
     *Timed Out*.
   - Los mensajes no incluyen el valor.
 - Pruebas: 85/85.
+
+## 2026-11-08 – Cuenta de Vercel del cliente
+
+- El cliente había perdido el acceso a su cuenta de Vercel. Se evaluó desplegar en la cuenta del
+  desarrollador y se descartó como primera opción: el sitio quedaría dependiendo de una cuenta
+  ajena, y el plan Hobby no admite uso comercial.
+- Se recuperó el acceso a la cuenta del cliente. Se agregó el checklist de endurecimiento de cuentas
+  ([despliegue.md](despliegue.md), sección 0.1): método de acceso, 2FA, códigos de recuperación,
+  tokens, miembros, integraciones y protección de las vistas previas.
