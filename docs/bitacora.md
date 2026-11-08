@@ -282,3 +282,11 @@ emails de destino).
   [seguridad.md](seguridad.md).
 - No se activó *Speed Insights*: script de terceros, choca con la CSP y requiere declararlo en la
   política de privacidad.
+- **Dominios en Vercel:**
+  - `privatgp.com` es el dominio de producción;
+  - `www.privatgp.com` hace 308 a `privatgp.com`, en línea con `VITE_SITE_URL`, `PANEL_URL` y `CORS_ORIGINS`.
+- **DNS en GoDaddy:** se **editaron** los registros existentes en lugar de crear nuevos, para evitar
+  duplicados.
+  - `A @`: de "Parked" a `216.198.79.1`, la IP nueva que recomienda Vercel.
+  - `CNAME www`: de `privatgp.com.` a `44ffce875f2eeba3.vercel-dns-017.com`.
+  - Verificado contra `ns41.domaincontrol.com`. Vercel muestra *Valid Configuration*.
