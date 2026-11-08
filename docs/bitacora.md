@@ -385,3 +385,25 @@ emails de destino).
 **Verificado**
 - 3 pruebas nuevas; API 88/88.
 - Vista previa en escritorio y móvil (390 px), sin scroll horizontal.
+
+## 2026-11-08 – Vercel Hobby bloquea los despliegues
+
+**Qué pasó**
+- Los merges de los PR #5 y #6 llegaron a `privatgestor-uy/privat`, pero en Vercel quedaron
+  **Blocked**. El mensaje: *"the commit author doesn't have permission to create deployments… Hobby
+  teams do not support collaboration"*.
+- La producción sigue en `c493fba` (PR #4): la web todavía no tiene el ojo de la contraseña, la
+  recuperación ni la corrección del mapa.
+- La API en Render sí se actualizó.
+
+**Causa**
+- El autor de los commits (`aragontechsolutions-dev`) no es miembro del equipo de Vercel, y en
+  Hobby no se pueden agregar miembros.
+- El primer deploy funcionó porque lo inició el dueño de la cuenta al importar el proyecto.
+
+**Opciones**
+- **Pro + agregar al desarrollador (recomendada):** además es el plan que corresponde a uso
+  comercial.
+- **Deploy hook:** pendiente de probar si Hobby lo permite.
+- **CLI de Vercel con la sesión del dueño.**
+- Se descarta hacer commits con la identidad del cliente.
