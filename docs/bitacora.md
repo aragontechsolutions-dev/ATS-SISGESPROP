@@ -407,3 +407,10 @@ emails de destino).
 - **Deploy hook:** pendiente de probar si Hobby lo permite.
 - **CLI de Vercel con la sesión del dueño.**
 - Se descarta hacer commits con la identidad del cliente.
+- **Prueba del deploy hook (08/11/2026):** Vercel lo aceptó (`state=PENDING`), pero el despliegue
+  quedó **Blocked**. Hobby bloquea por el autor del último commit de `main`, también cuando el
+  despliegue viene de un hook.
+- **Consecuencia:** en Hobby, el botón "Publicar" del panel tampoco actualiza la web.
+- **Recomendación al cliente:** Pro y agregar al desarrollador como miembro. Alternativa sin
+  verificar: que los merges los haga la cuenta de GitHub del cliente.
+- La URL del hook se guarda igual en Render (`VERCEL_DEPLOY_HOOK_URL`).
