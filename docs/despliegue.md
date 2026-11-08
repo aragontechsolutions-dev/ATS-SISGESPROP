@@ -140,6 +140,29 @@ Desde aquí, Vercel y Render se conectan al **repositorio de PRIVAT**.
      usuarios creados a mano.
    - **MFA TOTP** activado. El panel exige 2FA (`aal2`).
    - *Site URL*: `https://privatgp.com`.
+   - **Recuperación de contraseña del panel** ([ADR-016](adr/ADR-016-recuperacion-de-contrasena.md)).
+     El panel usa un **código** por email, no un enlace. Sin esta configuración, el email que
+     llega no sirve.
+     1. **SMTP propio con Resend** (*Authentication → Emails → SMTP Settings*). Según la
+        documentación de Supabase que conocemos, el servidor de correo incluido tiene un límite muy
+        bajo de envíos y puede enviar solo a miembros del equipo. Datos de Resend:
+        - host `smtp.resend.com`, puerto `465`;
+        - usuario `resend`;
+        - contraseña: una **API key nueva** de Resend con *Sending access* solo a `privatgp.com`
+          (por ejemplo `supabase-smtp`; no reutilizar la de Render);
+        - remitente `no-responder@privatgp.com`, nombre `PRIVAT`.
+
+        Confirmar los datos de SMTP en la documentación de Resend al configurarlo.
+     2. **Plantilla *Reset Password*** (*Authentication → Emails → Templates*). Debe mostrar
+        `{{ .Token }}` y **no** incluir `{{ .ConfirmationURL }}`. Por ejemplo:
+        - Asunto: `Código para recuperar tu contraseña – PRIVAT`
+        - Cuerpo: `<p>Tu código para recuperar la contraseña del panel de PRIVAT es:</p><p><strong>{{ .Token }}</strong></p><p>Vence en 15 minutos. Si no lo pediste, ignora este correo: sin tu app autenticadora nadie puede cambiar la contraseña.</p>`
+     3. **Vencimiento del código** (*Email OTP Expiration*): `900` segundos (15 minutos).
+     4. **Largo mínimo de contraseña** (*Authentication → Providers → Email*, o *Auth → Password
+        settings*): `12`, igual que el panel. Si el plan lo permite, activar también la detección
+        de contraseñas filtradas.
+     5. **Probar:** en `/admin/`, entrar a *¿Olvidaste tu contraseña?* y comprobar que llega el
+        código, que pide el 2FA y que cambia la contraseña.
 3. **Claves JWT:** confirmar que la clave de firma activa es **asimétrica** (ECC P-256 o RSA), en
    *JWT Keys / Signing Keys*. La API solo acepta ES256 o RS256 y verifica con las claves públicas
    (JWKS). Si el proyecto usa el secreto compartido HS256 (*legacy*), hay que migrar a claves

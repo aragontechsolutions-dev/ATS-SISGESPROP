@@ -334,3 +334,31 @@ emails de destino).
 - Segundo deploy: *No pending migrations*; el seed no cambia nada.
 - Un bloque editado se conserva después del seed.
 - Pruebas de la API: 85/85.
+
+## 2026-11-08 – Ajustes pedidos tras el primer ingreso al panel
+
+**Hecho**
+- **Ojo en los campos de contraseña:** botón accesible con `aria-pressed`, `aria-controls` y
+  etiqueta "Mostrar/Ocultar …". Solo cambia el `type` del campo.
+- **Recuperación de contraseña** ([ADR-016](adr/ADR-016-recuperacion-de-contrasena.md)):
+  - código por email, luego 2FA, luego contraseña nueva (mínimo 12 caracteres);
+  - al terminar se cierran todas las sesiones;
+  - mismo mensaje exista o no el email.
+  - Verificado en el código de Supabase Auth: cambiar la contraseña con 2FA activo exige `aal2`.
+- **Mapa sobre el menú:** el contenedor del mapa tiene `isolation: isolate`. Leaflet usa z-index de
+  400 a 1000 y tapaba el menú fijo (z-40).
+
+**Pruebas**
+- Auth simulado: `/recover`, `/verify`, `PUT /user` (con la regla `aal2` de Supabase) y un endpoint
+  solo de pruebas que restaura la contraseña para `a11y.e2e`.
+- e2e:
+  - nuevas: ojo, recuperación completa y menú por encima del mapa;
+  - la prueba del mapa se validó también quitando la corrección: detecta el error;
+  - corrección de la prueba: la página usa `scroll-behavior: smooth`, así que el scroll de la
+    prueba es instantáneo.
+- Resultado en limpio: landing 12/12, panel 19/19 y accesibilidad 17/17, con axe en las pantallas
+  nuevas.
+
+**Pendiente en Supabase para que funcione en producción**
+- SMTP con Resend, plantilla *Reset Password* con `{{ .Token }}`, vencimiento del código y largo
+  mínimo de contraseña. Ver [despliegue.md](despliegue.md), paso 2.

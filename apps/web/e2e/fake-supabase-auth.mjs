@@ -3,18 +3,24 @@
 //   POST /auth/v1/token?grant_type=password   GET /auth/v1/user
 //   POST /auth/v1/factors                      POST /auth/v1/factors/:id/challenge
 //   POST /auth/v1/factors/:id/verify           POST /auth/v1/logout
+//   POST /auth/v1/recover   POST /auth/v1/verify (type recovery)   PUT /auth/v1/user (contraseña)
 //   GET  /auth/v1/.well-known/jwks.json        (la API real verifica los tokens con esto)
-// Emite JWT ES256 con aal1 (contraseña) y aal2 (tras el código TOTP "123456").
+// Emite JWT ES256 con aal1 (contraseña o código de recuperación "654321") y aal2 (tras el
+// código TOTP "123456"). Como Supabase Auth (internal/api/user.go), cambiar la contraseña de
+// un usuario con 2FA exige una sesión aal2.
 //
 // Uso: FAKE_AUTH_PORT=54321 node e2e/fake-supabase-auth.mjs
 import http from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { exportJWK, generateKeyPair, SignJWT } from 'jose';
+import { decodeJwt, exportJWK, generateKeyPair, SignJWT } from 'jose';
 
 const PORT = Number(process.env.FAKE_AUTH_PORT ?? 54321);
 const ORIGIN = `http://127.0.0.1:${PORT}`;
 export const USER = { id: '00000000-0000-4000-8000-000000000001', email: 'e2e@test.local', password: 'Clave-de-prueba-1' };
 export const TOTP_CODE = '123456';
+export const RECOVERY_CODE = '654321';
+const INITIAL_PASSWORD = USER.password;
+let recoveryRequested = false;
 
 const { privateKey, publicKey } = await generateKeyPair('ES256');
 // kid nuevo en cada arranque (como una rotación real): la API cachea el JWKS por kid y,
@@ -55,6 +61,29 @@ http
       return send(res, 200, await session('aal1'));
     }
     if (req.method === 'GET' && p === '/auth/v1/user') return send(res, 200, user());
+    if (req.method === 'POST' && p === '/auth/v1/recover') {
+      const b = await readBody(req);
+      if (b.email === USER.email) recoveryRequested = true;
+      return send(res, 200, {}); // misma respuesta exista o no el email
+    }
+    if (req.method === 'POST' && p === '/auth/v1/verify') {
+      const b = await readBody(req);
+      if (b.type !== 'recovery' || !recoveryRequested || b.email !== USER.email || b.token !== RECOVERY_CODE) {
+        return send(res, 403, { code: 403, error_code: 'otp_expired', msg: 'Token has expired or is invalid' });
+      }
+      recoveryRequested = false; // un solo uso
+      return send(res, 200, await session('aal1'));
+    }
+    if (req.method === 'PUT' && p === '/auth/v1/user') {
+      const b = await readBody(req);
+      const claims = decodeJwt((req.headers.authorization ?? '').replace(/^Bearer /, ''));
+      if (factors.some((f) => f.status === 'verified') && claims.aal !== 'aal2') {
+        return send(res, 401, { code: 401, error_code: 'insufficient_aal', msg: 'AAL2 session is required to update email or password when MFA is enabled.' });
+      }
+      if (b.password === USER.password) return send(res, 422, { code: 422, error_code: 'same_password', msg: 'New password should be different from the old password.' });
+      if (b.password) USER.password = b.password;
+      return send(res, 200, user());
+    }
     if (req.method === 'POST' && p === '/auth/v1/factors') {
       const b = await readBody(req);
       const f = { id: randomUUID(), factor_type: 'totp', status: 'unverified', friendly_name: b.friendly_name };
@@ -73,6 +102,12 @@ http
       return send(res, 200, await session('aal2'));
     }
     if (req.method === 'POST' && p === '/auth/v1/logout') return send(res, 204);
+    // Solo pruebas: admin.e2e cambia la contraseña; esto la restaura para las pruebas siguientes.
+    if (req.method === 'POST' && p === '/__test__/reset-password') {
+      USER.password = INITIAL_PASSWORD;
+      recoveryRequested = false;
+      return send(res, 204);
+    }
     send(res, 404, { msg: 'not found (fake auth)' });
   })
   .listen(PORT, '127.0.0.1', () => console.log(`fake-supabase-auth escuchando en ${ORIGIN}`));

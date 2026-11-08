@@ -103,7 +103,9 @@ export default function MapView({ base, point, onPick, onOutside }: Props) {
   return (
     <div
       ref={containerRef}
-      className="h-[420px] w-full rounded-lg border border-border md:h-[520px]"
+      // isolate: crea un contexto de apilamiento propio. Leaflet usa z-index de 400 a 1000 en sus
+      // capas y controles; sin esto quedaban por encima del menú fijo (z-40) al hacer scroll.
+      className="isolate h-[420px] w-full rounded-lg border border-border md:h-[520px]"
       role="application"
       aria-label="Mapa de Uruguay. Haz clic o toca donde está tu propiedad."
       data-testid="coverage-map"

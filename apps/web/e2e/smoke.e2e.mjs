@@ -100,6 +100,21 @@ try {
     await page.locator('#cobertura').screenshot({ path: `${SHOTS_DIR}/mapa-cobertura.png` });
   }
 
+  await step('el menú fijo queda por encima del mapa al hacer scroll', async () => {
+    // Leaflet usa z-index 400-1000; el mapa tiene su propio contexto de apilamiento (isolate).
+    const result = await page.evaluate(() => {
+      const header = document.querySelector('header');
+      const zoom = document.querySelector('[data-testid="coverage-map"] .leaflet-control-zoom');
+      // Lleva el control de zoom (z-index 1000) justo debajo del menú.
+      // behavior 'instant': la página usa scroll-behavior: smooth y si no se mediría antes de moverse.
+      window.scrollTo({ top: window.scrollY + zoom.getBoundingClientRect().top - header.getBoundingClientRect().height / 2, behavior: 'instant' });
+      const z = zoom.getBoundingClientRect();
+      const top = document.elementFromPoint(z.left + z.width / 2, z.top + 2);
+      return { covered: Boolean(top?.closest('header')), at: top?.className?.toString().slice(0, 60) };
+    });
+    assert.ok(result.covered, `el mapa tapa el menú (elemento visible: ${result.at})`);
+  });
+
   await step('cotizador: muestra baja, alta y anual devueltos por la API', async () => {
     await page.getByRole('link', { name: 'Usar en el cotizador' }).click();
     await page.getByLabel('Casa premium 400-700 m²').check();
