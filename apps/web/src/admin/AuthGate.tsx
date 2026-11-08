@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { authConfigured, supabase } from './supabase';
 import { useIdleLogout } from './useIdleLogout';
+import { Logo } from '../components/Logo';
 
 type Stage =
   | { kind: 'loading' }
@@ -326,7 +327,7 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-primary p-4">
       <div className="w-full max-w-sm rounded-lg bg-surface p-6 shadow-sm md:p-8">
-        <p className="mb-2 text-sm font-bold tracking-[0.2em] text-text-secondary">PRIVAT</p>
+        <Logo variant="verde" alt="PRIVAT Gestión de Propiedades" className="mb-6 h-14 w-auto" />
         <h1 className="mb-6 text-2xl font-bold">{title}</h1>
         {children}
       </div>

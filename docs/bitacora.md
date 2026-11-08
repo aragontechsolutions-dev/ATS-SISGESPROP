@@ -385,3 +385,68 @@ emails de destino).
 **Verificado**
 - 3 pruebas nuevas; API 88/88.
 - Vista previa en escritorio y móvil (390 px), sin scroll horizontal.
+
+## 2026-11-08 – Vercel Hobby bloquea los despliegues
+
+**Qué pasó**
+- Los merges de los PR #5 y #6 llegaron a `privatgestor-uy/privat`, pero en Vercel quedaron
+  **Blocked**. El mensaje: *"the commit author doesn't have permission to create deployments… Hobby
+  teams do not support collaboration"*.
+- La producción sigue en `c493fba` (PR #4): la web todavía no tiene el ojo de la contraseña, la
+  recuperación ni la corrección del mapa.
+- La API en Render sí se actualizó.
+
+**Causa**
+- El autor de los commits (`aragontechsolutions-dev`) no es miembro del equipo de Vercel, y en
+  Hobby no se pueden agregar miembros.
+- El primer deploy funcionó porque lo inició el dueño de la cuenta al importar el proyecto.
+
+**Opciones**
+- **Pro + agregar al desarrollador (recomendada):** además es el plan que corresponde a uso
+  comercial.
+- **Deploy hook:** pendiente de probar si Hobby lo permite.
+- **CLI de Vercel con la sesión del dueño.**
+- Se descarta hacer commits con la identidad del cliente.
+- **Prueba del deploy hook (08/11/2026):** Vercel lo aceptó (`state=PENDING`), pero el despliegue
+  quedó **Blocked**. Hobby bloquea por el autor del último commit de `main`, también cuando el
+  despliegue viene de un hook.
+- **Consecuencia:** en Hobby, el botón "Publicar" del panel tampoco actualiza la web.
+- **Recomendación al cliente:** Pro y agregar al desarrollador como miembro. Alternativa sin
+  verificar: que los merges los haga la cuenta de GitHub del cliente.
+- La URL del hook se guarda igual en Render (`VERCEL_DEPLOY_HOOK_URL`).
+
+## 2026-11-08 – Decisión: web temporalmente en la cuenta de Vercel del desarrollador
+
+- **Decisión del cliente:** alojar la web en la cuenta del desarrollador hasta poder pagar Pro.
+- **Por qué funciona:** el proyecto se conecta al repositorio del desarrollador, cuyos merges hace
+  él mismo. Así se evita el bloqueo de Hobby por autor del commit, y el deploy hook (el botón
+  "Publicar") debería funcionar. Se verifica en el paso 2 de la migración.
+- **Riesgos comunicados:**
+  - Hobby no admite uso comercial, según los términos de Vercel que conocemos; se recomendó
+    dejarlo por escrito con el cliente;
+  - el sitio depende de la cuenta del desarrollador;
+  - hay dos repositorios que mantener iguales (`git pushall`).
+- Plan de migración en [despliegue.md](despliegue.md), sección 6.1.
+
+## 2026-11-08 – Logo de PRIVAT en la web y el panel
+
+**Contexto**
+- El cliente entregó `logo_Privat_05112026.pdf`, que es vectorial.
+- La web pasó a la cuenta de Vercel del desarrollador (decisión del cliente, informado de lo que
+  implica).
+
+**Hecho**
+- Se extrajeron del PDF el logotipo (en blanco y en verde) y el círculo verde oficial, sin
+  redibujar nada ([marca.md](marca.md)).
+- **Landing:** logotipo blanco en el menú y en el pie.
+- **Panel:** logotipo verde en el login y blanco en el encabezado.
+- **Favicon:** el círculo oficial.
+- **`apple-touch-icon.png`:** nuevo, de 180 px.
+- Componente `Logo` con `<img>` estático: sin cambios en la CSP y sin peso extra en el JavaScript.
+
+**Verificado (e2e en limpio)**
+- Landing 12/12, panel 19/19 y accesibilidad 17/17.
+- Capturas en escritorio y móvil.
+
+**Pendiente con el cliente:** tipografía, logo en los emails, imagen para redes y uso de la versión
+dorada.

@@ -5,6 +5,7 @@ import { AuthGate } from './AuthGate';
 import { ContentPage } from './pages/ContentPage';
 import { PricingPage } from './pages/PricingPage';
 import { AuditPage, LeadsPage, PublishPage } from './pages/OtherPages';
+import { Logo } from '../components/Logo';
 
 const TABS = [
   { id: 'contenidos', label: 'Contenidos', Page: ContentPage },
@@ -22,7 +23,7 @@ function AdminApp({ email, signOut }: { email: string; signOut: () => void }) {
     <div className="min-h-screen bg-background">
       <header className="bg-primary text-text-on-dark">
         <div className="container-page flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <p className="font-bold tracking-[0.2em]">PRIVAT <span className="ml-2 text-sm font-normal tracking-normal opacity-80">Panel</span></p>
+          <p className="flex items-center gap-3"><Logo variant="blanco" alt="PRIVAT" className="h-9 w-auto" /><span className="text-sm opacity-80">Panel</span></p>
           <div className="flex items-center gap-3 text-sm">
             <span className="opacity-80">{email}</span>
             <button type="button" className="btn-on-dark min-h-9 py-1" onClick={signOut}>Salir</button>

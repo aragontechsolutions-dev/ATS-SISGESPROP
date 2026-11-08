@@ -10,13 +10,13 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 | ★ P-3 | Regla del viático: ¿USD 0,35/km? ¿radio sin cargo? ¿tramos? Si son tramos: ¿monto por visita o por mes? | Modo por km con valores iniciales del plan (0 km de radio, 0,35 USD/km); modo por tramos bloqueado |
 | ★ P-5 | Valores de los 15 perfiles (5 tipos × 3 niveles) | Sin perfiles, el cotizador responde 404 para esa combinación |
 | P-4 | 3 o 4 trayectos reales con km por carretera | El factor de ruta queda en 1,3 (propuesto, sin calibrar) |
-| ★ P-16 | Cuentas a nombre del cliente. **Recibidas (06/11/2026):** dominio privatgp.com, GitHub, Render, Vercel, Supabase y Resend. Repositorio `privatgestor-uy/privat` (privado), código subido. DNS en **GoDaddy**. Render en plan **gratuito** por ahora (se recomienda el pago). **Faltan:** crear la cuenta de Cloudflare (Turnstile) y definir los buzones que reciben los avisos (mientras tanto, el email del administrador) | Despliegue según [despliegue.md](despliegue.md) |
+| ★ P-16 | Cuentas a nombre del cliente. **Recibidas (06/11/2026):** dominio privatgp.com, GitHub, Render, Vercel, Supabase y Resend. Repositorio `privatgestor-uy/privat` (privado), código subido. DNS en **GoDaddy**. Render en plan **gratuito** por ahora (se recomienda el pago). ~~Cloudflare (Turnstile)~~ creada. ~~Buzón de avisos~~ → `privat.gestor@gmail.com`. **Web en la cuenta de Vercel del desarrollador** de forma temporal, hasta que el cliente pase a Pro ([despliegue.md](despliegue.md), 6.1) | Desplegado en https://privatgp.com |
 
 ## Necesarios para los próximos bloques
 
 | Ref. | Dato | Bloque |
 |---|---|---|
-| ★ P-1 | ~~Nombre comercial~~ → **PRIVAT** (confirmado 04/11/2026). ~~Dominio~~ → **privatgp.com** (06/11/2026). Falta: logo vectorial | C (landing) |
+| ★ P-1 | ~~Nombre comercial~~ → **PRIVAT** (confirmado 04/11/2026). ~~Dominio~~ → **privatgp.com** (06/11/2026). ~~Logo~~ → recibido (08/11/2026) e implementado en la web y el panel ([marca.md](marca.md)) | C (landing) |
 | ★ P-13 / P-13b | Textos de la landing; fotos con derecho de uso (1 hero + 3 servicios) | C |
 | P-13c | Testimonios reales autorizados (si no hay, la sección se oculta) | C |
 | ★ P-14 | Teléfono, WhatsApp, email de consultas, dirección, redes | C |
@@ -45,8 +45,7 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 - **Textos de la landing:** son provisorios, tomados del Documento Maestro y adaptados por el desarrollo
   en Transparencia, Cobertura y Contacto. El "límite de gasto" se redactó sin cifra (el documento dice
   "ej. USD 500").
-- **Tipografía:** se usa la del sistema (cero descargas) hasta definir la identidad visual del logo (P-1).
-- **Marca sin logo:** "PRIVAT" se muestra como texto con espaciado amplio y el favicon es genérico hasta recibir el logo vectorial.
+- **Tipografía:** se usa la del sistema (cero descargas). El logo ya llegó: falta que el cliente confirme si quiere unificar la tipografía de la web ([marca.md](marca.md)).
 - **Hero:** fondo verde con líneas arquitectónicas en SVG hasta tener la fotografía (P-13b).
 
 ## Pendiente técnico del Bloque D
@@ -54,20 +53,19 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 - **D4 – Imágenes** (hero escritorio/móvil y servicios): subida con URL firmada de Supabase Storage,
   solo JPG/PNG/WebP, tamaño máximo y sin metadatos (tabla `media_asset`, ya creada). Depende de
   Supabase Storage (P-16) y de las fotos (P-13b).
-- **Panel contra Supabase real:** probado con un servidor de Auth simulado. Hay que repetir la prueba con
-  el proyecto real del cliente.
+- ~~**Panel contra Supabase real**~~: ingreso con 2FA verificado en producción (08/11/2026). Falta probar en real la recuperación de contraseña, después de configurar el SMTP y la plantilla ([emails.md](emails.md)).
 
 ## Dudas técnicas abiertas (NO SÉ todavía)
 
 - **Claves de prueba secretas de Cloudflare Turnstile:** no se pudieron verificar (documentación
   bloqueada en el entorno). Las pruebas automáticas simulan el verificador.
-- **`buildCommand` de Vercel** con raíz `apps/web` en el monorepo: a verificar en el primer despliegue.
+- ~~**`buildCommand` de Vercel** con raíz `apps/web`~~: verificado en producción (07/11/2026).
 - **Alternativa accesible al mapa:** hoy hay un enlace "Escríbenos". La lista de departamento y
   localidad depende de la fuente de localidades (ver abajo).
 
 - **Saltos de proxy en Render** (`TRUST_PROXY_HOPS`): valor inicial 1. Hay que confirmarlo en el primer
   despliegue revisando que `req.ip` sea la IP del visitante.
-- **Herramienta de prerender (SSG) para Vite**: no está validada; se prueba el día 5 (riesgo del plan).
+- ~~**Herramienta de prerender (SSG) para Vite**~~: resuelto con el SSR nativo de Vite ([ADR-011](adr/ADR-011-prerender-vite-ssr.md)).
 - **Fuente oficial de localidades** (tabla `locality`, para elegir "departamento y localidad"): sin
   cargar. Opciones a evaluar: INE / IDE Uruguay.
 - **Región "adecuada" para la URCDP** (transferencia internacional de datos): la decide el asesor legal

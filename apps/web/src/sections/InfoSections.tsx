@@ -1,4 +1,5 @@
 import { content } from '../content';
+import { Logo } from '../components/Logo';
 
 /** Banner visible mientras el contenido sea provisorio (plan, sección 9). */
 export function ProvisionalBanner() {
@@ -120,7 +121,7 @@ export function Footer() {
     <footer className="bg-primary px-4 py-12 text-text-on-dark sm:px-6">
       <div className="container-page grid gap-8 md:grid-cols-3">
         <div>
-          <p className="text-lg font-bold tracking-[0.2em]">{brand.name}</p>
+          <Logo variant="blanco" alt={`${brand.name} Gestión de Propiedades`} className="h-14 w-auto" />
           <p className="mt-2 text-sm text-text-on-dark/80">Property Management técnico · Uruguay</p>
         </div>
         <ul className="space-y-2 text-sm">

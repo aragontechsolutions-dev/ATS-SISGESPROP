@@ -24,6 +24,8 @@ cada paso usa datos del anterior.
 | DNS | Dominio comprado en **GoDaddy**. Los registros se cargan en GoDaddy (*Mis productos → Dominio → DNS*) | Ver "Notas para GoDaddy" en el paso 3 |
 | Cloudflare | El cliente **no tiene cuenta**. Hay que crearla (gratis) solo para Turnstile | El DNS sigue en GoDaddy: no se mueve a Cloudflare |
 | Vercel | El cliente había perdido el acceso; lo recuperó el 08/11/2026 y se endureció la cuenta (0.1). El proyecto va **en la cuenta del cliente**. Plan Hobby: no admite uso comercial, se recomienda Pro | – |
+| Vercel Hobby: despliegues **bloqueados** | Desde el 08/11/2026, los push con merges hechos por `aragontechsolutions-dev` quedan *Blocked*: *"the commit author doesn't have permission… Hobby teams do not support collaboration"*. En Hobby no se pueden agregar miembros. Se recomienda **Pro** y agregar al desarrollador; el deploy hook **también queda bloqueado** (probado el 08/11/2026), así que en Hobby el botón "Publicar" no actualiza la web | La web queda en la última versión desplegada hasta resolverlo; la API (Render) no se ve afectada |
+| Vercel: decisión temporal (08/11/2026) | Por decisión del cliente, la web se aloja **temporalmente en la cuenta de Vercel del desarrollador**, conectada al repositorio `aragontechsolutions-dev/ATS-SISGESPROP`, hasta pasar a Pro. Riesgo aceptado: Hobby no admite uso comercial. Al pasar a Pro se **transfiere el proyecto** al equipo del cliente. Ver sección 6.1 | Web desde el repositorio del desarrollador y API desde el del cliente: subir siempre a los dos (`git pushall`) |
 | Render | **Plan gratuito por ahora.** Se le insiste al cliente para pasar al pago | El servicio se duerme tras un rato sin tráfico y tarda en despertar (ver paso 5) |
 | Región | Supabase quedó en **Oregon** | Render también en **Oregon** (API y base juntas) |
 | Destinatarios del aviso | `privat.gestor@gmail.com` (confirmado 07/11/2026) | `LEAD_NOTIFY_TO` en Render |
@@ -433,6 +435,28 @@ Remove-Item Env:DATABASE_URL
    - `privatgp.com` como dominio principal.
    - `www` redirige a `privatgp.com`.
    - Cargar en el DNS los registros que indique Vercel.
+
+### 6.1 Migración temporal a la cuenta de Vercel del desarrollador (08/11/2026)
+
+1. En la cuenta del desarrollador, crear `privat-web`:
+   - importar `aragontechsolutions-dev/ATS-SISGESPROP`;
+   - raíz `apps/web`, *Framework* Other;
+   - las 5 variables `VITE_*`.
+   Comprobar que el deploy termine **Ready** en `.vercel.app`.
+2. Crear el deploy hook (`publicar-panel`, rama `main`) y dispararlo. Debe terminar **Ready**.
+3. Quitar `privatgp.com` y `www` del proyecto del cliente y agregarlos al nuevo:
+   - `privatgp.com` como Production y `www` con 308 a `privatgp.com`;
+   - TXT `_vercel` si Vercel lo pide;
+   - revisar el **CNAME de `www`**, que puede cambiar de un proyecto a otro.
+4. En Render, poner en `VERCEL_DEPLOY_HOOK_URL` el hook nuevo.
+5. Comprobar el sitio, `www`, `/admin/` y las cabeceras.
+6. En la cuenta del cliente, borrar el hook viejo y el proyecto (o dejarlo sin dominios).
+7. La cuenta del desarrollador debe tener 2FA y tokens revisados (0.1).
+8. **Alias para mantener los dos repositorios iguales:**
+   `git config alias.pushall "!git push origin main && git push privat main"`.
+9. **Al pasar a Pro:** transferir el proyecto al equipo del cliente (*Settings → General →
+   Transfer*, si Vercel lo ofrece en ese momento), reconectarlo al repositorio `privatgestor-uy/privat`
+   y actualizar el hook en Render.
 
 ## 7. Administrador y primera publicación
 
