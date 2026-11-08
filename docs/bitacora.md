@@ -223,7 +223,7 @@ emails de destino).
 - Así se evita recrear el proyecto de Supabase.
 - Configuración de Auth confirmada por el usuario: registro público desactivado, TOTP habilitado y
   *Site URL* `https://privatgp.com`.
-- Migraciones y seed: el usuario indicó que todo lo demás está OK.
+- ~~Migraciones y seed: el usuario indicó que todo lo demás está OK.~~ **Corrección (07/11/2026):** las migraciones **no** se habían ejecutado: el esquema `public` estaba vacío. Se dio por hecho sin pedir la consulta de comprobación. Ver la entrada "Administrador del panel".
 
 ## 2026-11-07 – Resend y DNS (GoDaddy)
 
@@ -265,3 +265,72 @@ emails de destino).
     *Timed Out*.
   - Los mensajes no incluyen el valor.
 - Pruebas: 85/85.
+
+## 2026-11-08 – Cuenta de Vercel del cliente
+
+- El cliente había perdido el acceso a su cuenta de Vercel. Se evaluó desplegar en la cuenta del
+  desarrollador y se descartó como primera opción: el sitio quedaría dependiendo de una cuenta
+  ajena, y el plan Hobby no admite uso comercial.
+- Se recuperó el acceso a la cuenta del cliente. Se agregó el checklist de endurecimiento de cuentas
+  ([despliegue.md](despliegue.md), sección 0.1): método de acceso, 2FA, códigos de recuperación,
+  tokens, miembros, integraciones y protección de las vistas previas.
+- **Web desplegada** en Vercel (cuenta del cliente): `privat-web.vercel.app`. Build de 38 s, en
+  producción.
+- Cabeceras verificadas: HSTS, `X-Frame-Options DENY`, `frame-ancestors 'none'`, nosniff,
+  Referrer-Policy, Permissions-Policy y COOP. Se sirve desde el nodo de São Paulo (`gru1`).
+- `Access-Control-Allow-Origin: *` viene de Vercel por defecto. Se aceptó y quedó documentado en
+  [seguridad.md](seguridad.md).
+- No se activó *Speed Insights*: script de terceros, choca con la CSP y requiere declararlo en la
+  política de privacidad.
+- **Dominios en Vercel:**
+  - `privatgp.com` es el dominio de producción;
+  - `www.privatgp.com` hace 308 a `privatgp.com`, en línea con `VITE_SITE_URL`, `PANEL_URL` y `CORS_ORIGINS`.
+- **DNS en GoDaddy:** se **editaron** los registros existentes en lugar de crear nuevos, para evitar
+  duplicados.
+  - `A @`: de "Parked" a `216.198.79.1`, la IP nueva que recomienda Vercel.
+  - `CNAME www`: de `privatgp.com.` a `44ffce875f2eeba3.vercel-dns-017.com`.
+  - Verificado contra `ns41.domaincontrol.com`. Vercel muestra *Valid Configuration*.
+
+## 2026-11-07 – Administrador del panel: faltaban las migraciones
+
+**Qué pasó**
+- Al crear el administrador, `INSERT INTO public.admin_profile` falló con
+  `42P01 relation "public.admin_profile" does not exist`.
+- El *Table Editor* mostró el esquema `public` vacío.
+
+**Causa**
+- Las migraciones no se habían corrido.
+- No se detectó antes porque `/health` solo hace `SELECT 1`, que funciona sin tablas.
+
+**Lección**
+- Confirmar cada paso con su comprobación (`count(*)` de `content_block` = 11 y RLS activa), y no con
+  un "OK" general.
+- Pendiente evaluar si `/health` debería comprobar también que existe el esquema.
+
+## 2026-11-08 – Migraciones automáticas en el build de Render
+
+**Contexto**
+- Desde la laptop, `prisma migrate deploy` fallaba con *"datasource.url property is required"*:
+  `DIRECT_URL` no llegaba a la variable de entorno de la terminal. Se probó `Read-Host` y el
+  portapapeles, sin éxito.
+- El usuario pidió automatizarlo en Render.
+
+**Hecho**
+- **Nuevos scripts:**
+  - `db:deploy`: `db:migrate` seguido de `db:seed`.
+  - `db:check-url`: `scripts/check-direct-url.mjs`, también previo a `db:migrate` y `db:seed`.
+- **La comprobación de `DIRECT_URL`:**
+  - falla con un mensaje claro si la variable falta, va entre comillas, no es `postgresql://` o
+    usa el puerto 6543;
+  - nunca imprime el valor.
+- **Render:** el Build Command termina con `npm run db:deploy -w @ats/api`, y se agrega la variable
+  `DIRECT_URL` (session pooler).
+
+**Verificado con una base vacía**
+- Primer deploy:
+  - 3 migraciones aplicadas;
+  - 11 bloques de contenido;
+  - 18 tablas, todas con RLS.
+- Segundo deploy: *No pending migrations*; el seed no cambia nada.
+- Un bloque editado se conserva después del seed.
+- Pruebas de la API: 85/85.

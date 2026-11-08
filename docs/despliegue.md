@@ -23,6 +23,7 @@ cada paso usa datos del anterior.
 | Repositorio | `privatgestor-uy/privat`, **privado**. Código subido el 06/11/2026 | En el plan gratuito de GitHub, los repositorios privados tienen un cupo mensual de minutos de Actions, y la protección de ramas y el *secret scanning* pueden requerir un plan pago. Revisar en *Settings* qué ofrece la cuenta |
 | DNS | Dominio comprado en **GoDaddy**. Los registros se cargan en GoDaddy (*Mis productos → Dominio → DNS*) | Ver "Notas para GoDaddy" en el paso 3 |
 | Cloudflare | El cliente **no tiene cuenta**. Hay que crearla (gratis) solo para Turnstile | El DNS sigue en GoDaddy: no se mueve a Cloudflare |
+| Vercel | El cliente había perdido el acceso; lo recuperó el 08/11/2026 y se endureció la cuenta (0.1). El proyecto va **en la cuenta del cliente**. Plan Hobby: no admite uso comercial, se recomienda Pro | – |
 | Render | **Plan gratuito por ahora.** Se le insiste al cliente para pasar al pago | El servicio se duerme tras un rato sin tráfico y tarda en despertar (ver paso 5) |
 | Región | Supabase quedó en **Oregon** | Render también en **Oregon** (API y base juntas) |
 | Destinatarios del aviso | `privat.gestor@gmail.com` (confirmado 07/11/2026) | `LEAD_NOTIFY_TO` en Render |
@@ -39,6 +40,33 @@ cada paso usa datos del anterior.
   Nunca van en el repositorio, en un chat, en un email ni en un ticket.
 - **Solo hay un archivo `.env` local**, en la laptop, para correr migraciones. Está en `.gitignore`.
   Se borra al terminar el despliegue.
+
+### 0.1 Endurecer cada cuenta del cliente (checklist)
+
+Se aplicó a Vercel el 08/11/2026, después de que el cliente recuperara el acceso. Vale para todos los
+servicios.
+
+1. **Método de inicio de sesión:** solo métodos **del cliente** (su email o su GitHub). Desconectar
+   los que no se reconozcan o que sean del desarrollador. En Vercel: *Account Settings →
+   Authentication*.
+2. **Asegurar el email y el GitHub de acceso.** Vercel suele entrar con un código por email o con
+   GitHub, y quien los controla controla la cuenta. Para el Gmail del cliente: verificación en dos
+   pasos, teléfono y correo de recuperación del cliente, y revisión de dispositivos.
+3. **2FA en el servicio** con una app autenticadora en el **teléfono del cliente**, o con passkeys.
+   Los **códigos de recuperación** van en el gestor de contraseñas del cliente.
+4. **Limpieza de accesos:**
+   - borrar tokens de API desconocidos o sin uso;
+   - dejar solo miembros del cliente;
+   - desinstalar integraciones desconocidas;
+   - en GitHub, dar a las apps (Vercel, Render) acceso **solo** al repositorio `privat`.
+5. **Al terminar:** cerrar sesión. Si el cliente compartió alguna contraseña, que la cambie.
+   Usar un perfil de navegador separado para sus cuentas.
+6. **Meta:** que el cliente invite al desarrollador como miembro, en lugar de compartir la cuenta.
+   En Vercel eso requiere el plan Pro, que además corresponde a un sitio comercial: el plan Hobby es
+   de uso personal y no comercial, según los términos de Vercel que conocemos. Verificarlo en
+   Vercel.
+7. **Vercel, proyecto `privat-web`:** en *Settings → Deployment Protection*, proteger las vistas
+   previas (*Vercel Authentication*). La producción es pública.
 
 Secretos y dónde vive cada uno:
 
@@ -255,10 +283,23 @@ en GoDaddy.
    - *Root directory*: vacío (la raíz del monorepo).
    - *Build command*:
      ```bash
-     npm ci --include=dev --ignore-scripts && npm run build -w @ats/pricing && npm run build -w @ats/api
+     npm ci --include=dev --ignore-scripts && npm run build -w @ats/pricing && npm run build -w @ats/api && npm run db:deploy -w @ats/api
      ```
-     `--include=dev` es necesario: con `NODE_ENV=production`, npm omite las devDependencies
-     (TypeScript, Prisma CLI) y el build falla. Verificado en una simulación limpia.
+     - `--include=dev` es necesario: con `NODE_ENV=production`, npm omite las devDependencies
+       (TypeScript, Prisma CLI) y el build falla. Verificado en una simulación limpia.
+     - **`db:deploy` (desde el 08/11/2026)** aplica las migraciones pendientes y el seed en cada
+       deploy. Necesita `DIRECT_URL` en las variables de Render.
+       - Si la base ya está al día, no hace nada.
+       - El seed usa `ON CONFLICT DO NOTHING`, así que nunca pisa lo editado en el panel
+         (verificado).
+       - Si falla, el build falla y **sigue funcionando la versión anterior**.
+     - En el plan gratuito de Render no hay *Pre-Deploy Command* (según su documentación, es de
+       planes pagos). Por eso las migraciones van en el build. Contrapartida: si la migración
+       sale bien pero el deploy falla después, la versión anterior queda corriendo sobre el esquema
+       nuevo. Las migraciones deben ser **compatibles hacia atrás** (agregar, no borrar ni
+       renombrar en el mismo paso).
+     - **Con plan pago:** mover `npm run db:deploy -w @ats/api` al *Pre-Deploy Command* y
+       quitarlo del build.
    - *Start command*:
      ```bash
      npm start -w @ats/api
@@ -282,6 +323,7 @@ en GoDaddy.
    | `LEAD_NOTIFY_TO` | `privat.gestor@gmail.com` (más emails, separados por coma) |
    | `NODE_VERSION` | `24.22.1` (fija la versión de Node en Render) |
    | `PANEL_URL` | `https://privatgp.com/admin/` |
+   | `DIRECT_URL` | Cadena del **session pooler** de Supabase (:5432). La usan las migraciones del build. Mismo usuario y contraseña que `DATABASE_URL`, así que no agrega exposición |
    | `VERCEL_DEPLOY_HOOK_URL` | Se completa en el paso 6.5 |
 
    - **Los valores se pegan sin comillas**, ni simples ni dobles. Render los guarda tal cual. Si
