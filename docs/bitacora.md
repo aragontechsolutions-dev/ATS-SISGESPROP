@@ -223,7 +223,7 @@ emails de destino).
 - Así se evita recrear el proyecto de Supabase.
 - Configuración de Auth confirmada por el usuario: registro público desactivado, TOTP habilitado y
   *Site URL* `https://privatgp.com`.
-- Migraciones y seed: el usuario indicó que todo lo demás está OK.
+- ~~Migraciones y seed: el usuario indicó que todo lo demás está OK.~~ **Corrección (07/11/2026):** las migraciones **no** se habían ejecutado: el esquema `public` estaba vacío. Se dio por hecho sin pedir la consulta de comprobación. Ver la entrada "Administrador del panel".
 
 ## 2026-11-07 – Resend y DNS (GoDaddy)
 
@@ -290,3 +290,19 @@ emails de destino).
   - `A @`: de "Parked" a `216.198.79.1`, la IP nueva que recomienda Vercel.
   - `CNAME www`: de `privatgp.com.` a `44ffce875f2eeba3.vercel-dns-017.com`.
   - Verificado contra `ns41.domaincontrol.com`. Vercel muestra *Valid Configuration*.
+
+## 2026-11-07 – Administrador del panel: faltaban las migraciones
+
+**Qué pasó**
+- Al crear el administrador, `INSERT INTO public.admin_profile` falló con
+  `42P01 relation "public.admin_profile" does not exist`.
+- El *Table Editor* mostró el esquema `public` vacío.
+
+**Causa**
+- Las migraciones no se habían corrido.
+- No se detectó antes porque `/health` solo hace `SELECT 1`, que funciona sin tablas.
+
+**Lección**
+- Confirmar cada paso con su comprobación (`count(*)` de `content_block` = 11 y RLS activa), y no con
+  un "OK" general.
+- Pendiente evaluar si `/health` debería comprobar también que existe el esquema.
