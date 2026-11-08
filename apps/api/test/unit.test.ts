@@ -8,6 +8,8 @@ import { DEFAULT_TERRITORY_TOLERANCE_KM, URUGUAY_GEOMETRY } from '../src/geo/uru
 import { TurnstileVerifier } from '../src/leads/turnstile.verifier.ts';
 import { ResendLeadNotifier } from '../src/leads/resend-notifier.ts';
 import { describeDbError } from '../src/health/health.controller.ts';
+import { BRAND, escapeHtml, renderNewLeadEmail } from '../src/leads/lead-email.ts';
+import { readFileSync } from 'node:fs';
 
 describe('describeDbError (log del health check)', () => {
   it('muestra el código y el mensaje, nunca la URL de conexión', () => {
@@ -204,5 +206,37 @@ describe('ResendLeadNotifier (aviso por email)', () => {
 
   it('falla si Resend responde error (LeadsService lo captura y la consulta igual se guarda)', async () => {
     await assert.rejects(new ResendLeadNotifier(config, capture(422).fn).notifyNewLead({ leadId: 'x', createdAt: new Date() }), /Resend HTTP 422/);
+  });
+});
+
+describe('plantillas de email con la identidad de PRIVAT', () => {
+  const brandColors = Object.values(BRAND);
+
+  it('aviso de consulta: marca, botón al panel y texto plano, sin datos del visitante', () => {
+    const e = renderNewLeadEmail({ when: '06/11/26, 12:00', panelUrl: 'https://privatgp.com/admin/' });
+    assert.equal(e.subject, 'Nueva consulta en la web de PRIVAT');
+    assert.match(e.html, /<html lang="es">/);
+    assert.match(e.html, />PRIVAT</);
+    assert.match(e.html, /href="https:\/\/privatgp\.com\/admin\/"/);
+    for (const c of brandColors) assert.ok(e.html.includes(c), `falta el color ${c}`);
+    assert.match(e.text, /https:\/\/privatgp\.com\/admin\//);
+    assert.match(e.text, /no incluye los datos del visitante/);
+    assert.ok(!/<script|<img|https?:\/\/(?!privatgp\.com)/i.test(e.html), 'sin scripts, imágenes ni recursos externos');
+  });
+
+  it('aviso de consulta: escapa los valores', () => {
+    assert.equal(escapeHtml(`"><script>&'`), '&quot;&gt;&lt;script&gt;&amp;&#39;');
+    const e = renderNewLeadEmail({ when: '<b>x</b>', panelUrl: 'https://privatgp.com/admin/?a="><script>alert(1)</script>' });
+    assert.ok(!e.html.includes('<script>'));
+    assert.ok(!e.html.includes('<b>x</b>'));
+  });
+
+  it('Supabase "Reset Password": solo {{ .Token }}, sin enlaces de confirmación y con la marca', () => {
+    const html = readFileSync(new URL('../../../../supabase/templates/reset-password.html', import.meta.url), 'utf8');
+    assert.deepEqual(html.match(/{{[^}]*}}/g), ['{{ .Token }}']);
+    assert.ok(!html.includes('ConfirmationURL'));
+    assert.ok(!/<a\s|<script|<img/i.test(html), 'sin enlaces, scripts ni imágenes');
+    assert.match(html, /<html lang="es">/);
+    for (const c of brandColors) assert.ok(html.includes(c), `falta el color ${c}`);
   });
 });

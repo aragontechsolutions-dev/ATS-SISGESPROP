@@ -95,8 +95,15 @@ try {
   page.on('dialog', (d) => void d.accept());
   await page.goto(`${WEB_URL}/admin/`, { waitUntil: 'networkidle' });
   await audit(page, 'panel: login');
+  await page.getByRole('button', { name: 'Mostrar contraseña' }).click();
+  await audit(page, 'panel: login con la contraseña visible');
+  await page.getByRole('button', { name: 'Ocultar contraseña' }).click();
+  await page.getByRole('button', { name: '¿Olvidaste tu contraseña?' }).click();
+  await page.getByRole('heading', { name: 'Recuperar contraseña' }).waitFor();
+  await audit(page, 'panel: recuperar contraseña');
+  await page.getByRole('button', { name: 'Volver' }).click();
   await page.getByLabel('Email').fill('e2e@test.local');
-  await page.getByLabel('Contraseña').fill('Clave-de-prueba-1');
+  await page.getByLabel('Contraseña', { exact: true }).fill('Clave-de-prueba-1');
   await page.getByRole('button', { name: 'Ingresar' }).click();
   await page.getByRole('heading', { name: 'Segundo factor' }).waitFor();
   await audit(page, 'panel: segundo factor (alta con QR)');

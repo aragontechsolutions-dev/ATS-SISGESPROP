@@ -334,3 +334,54 @@ emails de destino).
 - Segundo deploy: *No pending migrations*; el seed no cambia nada.
 - Un bloque editado se conserva después del seed.
 - Pruebas de la API: 85/85.
+
+## 2026-11-08 – Ajustes pedidos tras el primer ingreso al panel
+
+**Hecho**
+- **Ojo en los campos de contraseña:** botón accesible con `aria-pressed`, `aria-controls` y
+  etiqueta "Mostrar/Ocultar …". Solo cambia el `type` del campo.
+- **Recuperación de contraseña** ([ADR-016](adr/ADR-016-recuperacion-de-contrasena.md)):
+  - código por email, luego 2FA, luego contraseña nueva (mínimo 12 caracteres);
+  - al terminar se cierran todas las sesiones;
+  - mismo mensaje exista o no el email.
+  - Verificado en el código de Supabase Auth: cambiar la contraseña con 2FA activo exige `aal2`.
+- **Mapa sobre el menú:** el contenedor del mapa tiene `isolation: isolate`. Leaflet usa z-index de
+  400 a 1000 y tapaba el menú fijo (z-40).
+
+**Pruebas**
+- Auth simulado: `/recover`, `/verify`, `PUT /user` (con la regla `aal2` de Supabase) y un endpoint
+  solo de pruebas que restaura la contraseña para `a11y.e2e`.
+- e2e:
+  - nuevas: ojo, recuperación completa y menú por encima del mapa;
+  - la prueba del mapa se validó también quitando la corrección: detecta el error;
+  - corrección de la prueba: la página usa `scroll-behavior: smooth`, así que el scroll de la
+    prueba es instantáneo.
+- Resultado en limpio: landing 12/12, panel 19/19 y accesibilidad 17/17, con axe en las pantallas
+  nuevas.
+
+**Pendiente en Supabase para que funcione en producción**
+- SMTP con Resend, plantilla *Reset Password* con `{{ .Token }}`, vencimiento del código y largo
+  mínimo de contraseña. Ver [despliegue.md](despliegue.md), paso 2.
+
+## 2026-11-08 – Plantillas de email con la identidad visual
+
+**Inventario**
+- El sistema usa **dos** correos:
+  - el aviso de consulta nueva (API → Resend);
+  - el código de recuperación de contraseña (Supabase Auth).
+- Las demás plantillas de Supabase no se usan; el motivo de cada una está en
+  [emails.md](emails.md).
+
+**Hecho**
+- `apps/api/src/leads/lead-email.ts`: el diseño del aviso, separado de `resend-notifier.ts`.
+  - Cabecera verde con "PRIVAT", línea dorada y botón "Ver la consulta en el panel".
+  - Versión de texto plano.
+  - Valores escapados.
+- `supabase/templates/reset-password.html`: mismo diseño, con el código en un recuadro destacado.
+- Al escribir la plantilla de Supabase se detectó un riesgo: tenía un comentario con
+  `{{ .ConfirmationURL }}`, y el motor de Go lo habría procesado. Se quitó, y una prueba exige que
+  solo exista `{{ .Token }}`.
+
+**Verificado**
+- 3 pruebas nuevas; API 88/88.
+- Vista previa en escritorio y móvil (390 px), sin scroll horizontal.

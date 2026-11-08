@@ -7,8 +7,9 @@ cotizador y los viáticos, y ver las consultas recibidas, sin tocar código.
 
 ## 1. Ingresar
 
-1. Abrir **`https://<dominio de PRIVAT>/admin/`**. El dominio se definirá al publicar el sitio.
-2. Escribir el email y la contraseña.
+1. Abrir **`https://privatgp.com/admin/`**.
+2. Escribir el email y la contraseña. El botón con el **ojo**, a la derecha del campo, muestra u oculta lo
+   escrito. Úselo solo cuando nadie esté mirando la pantalla.
 3. **Segundo factor** (obligatorio):
    - **La primera vez**, el panel muestra un **código QR**. Escanéelo con una app autenticadora en el
      teléfono (Google Authenticator, Microsoft Authenticator, 1Password u otra) y escriba el código de
@@ -19,6 +20,26 @@ cotizador y los viáticos, y ver las consultas recibidas, sin tocar código.
 
 > **Seguridad:** no comparta su contraseña ni su teléfono con la app autenticadora. Si pierde el
 > teléfono, avise de inmediato para desactivar su acceso.
+
+### 1.1 Olvidé mi contraseña
+
+1. En la pantalla de ingreso, pulse **"¿Olvidaste tu contraseña?"**.
+2. Escriba su email y pulse **Enviar código**. Por seguridad, el panel muestra el mismo mensaje
+   tanto si el email tiene cuenta como si no.
+3. Revise su correo, también la carpeta de spam. Escriba el **código del email** y pulse
+   **Continuar**. El código vence en unos minutos; si venció, pida otro.
+4. Escriba el **código de 6 dígitos de su app autenticadora**. Sin la app no se puede cambiar la
+   contraseña: así nadie puede cambiarla con solo entrar a su correo.
+5. Escriba la **contraseña nueva** dos veces, con un mínimo de 12 caracteres, y pulse **Guardar
+   contraseña**.
+6. Se cierran todas las sesiones abiertas. Ingrese con la contraseña nueva.
+
+> **Si perdió el teléfono con la app autenticadora**, la recuperación por email no alcanza. Avise al
+> responsable técnico: él borra el segundo factor en Supabase y, al ingresar, el panel le pedirá
+> configurar la app de nuevo.
+>
+> Proteja también **la cuenta de correo** del panel con verificación en dos pasos: es parte de la
+> recuperación.
 
 ---
 

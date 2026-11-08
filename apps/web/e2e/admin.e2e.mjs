@@ -9,6 +9,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
 const WEB_URL = process.env.WEB_URL ?? 'http://127.0.0.1:4173';
 const API_URL = process.env.API_URL ?? 'http://127.0.0.1:3000';
+const FAKE_AUTH_URL = process.env.FAKE_AUTH_URL ?? 'http://127.0.0.1:54321';
 const SHOTS_DIR = process.env.SHOTS_DIR;
 const USER = { email: 'e2e@test.local', password: 'Clave-de-prueba-1' };
 
@@ -39,13 +40,13 @@ try {
 
   await step('contraseña incorrecta: mensaje genérico', async () => {
     await page.getByLabel('Email').fill(USER.email);
-    await page.getByLabel('Contraseña').fill('incorrecta');
+    await page.getByLabel('Contraseña', { exact: true }).fill('incorrecta');
     await page.getByRole('button', { name: 'Ingresar' }).click();
     await page.getByText('Email o contraseña incorrectos.').waitFor();
   });
 
   await step('primer ingreso: alta del segundo factor con QR', async () => {
-    await page.getByLabel('Contraseña').fill(USER.password);
+    await page.getByLabel('Contraseña', { exact: true }).fill(USER.password);
     await page.getByRole('button', { name: 'Ingresar' }).click();
     await page.getByRole('heading', { name: 'Segundo factor' }).waitFor();
     await page.getByAltText('Código QR para la app autenticadora').waitFor();
@@ -147,6 +148,73 @@ try {
     await page.getByRole('heading', { name: 'Ingresar al panel' }).waitFor();
   });
 
+  await step('ojo de la contraseña: muestra y oculta lo escrito', async () => {
+    const pass = page.getByLabel('Contraseña', { exact: true });
+    await pass.fill('visible-123');
+    assert.equal(await pass.getAttribute('type'), 'password');
+    await page.getByRole('button', { name: 'Mostrar contraseña' }).click();
+    assert.equal(await pass.getAttribute('type'), 'text');
+    assert.equal(await page.getByRole('button', { name: 'Ocultar contraseña' }).getAttribute('aria-pressed'), 'true');
+    await page.getByRole('button', { name: 'Ocultar contraseña' }).click();
+    assert.equal(await pass.getAttribute('type'), 'password');
+    await pass.fill('');
+  });
+
+  const NEW_PASSWORD = 'Nueva-clave-segura-2026';
+  await step('recuperar contraseña: código por email + segundo factor', async () => {
+    await page.getByRole('button', { name: '¿Olvidaste tu contraseña?' }).click();
+    await page.getByRole('heading', { name: 'Recuperar contraseña' }).waitFor();
+    await page.getByLabel('Email').fill(USER.email);
+    await page.getByRole('button', { name: 'Enviar código' }).click();
+    await page.getByText(/Si el email corresponde a una cuenta del panel/).waitFor();
+    await page.getByLabel('Código del email').fill('000000');
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await page.getByText('Código incorrecto o vencido. Puedes pedir uno nuevo.').waitFor();
+    await page.getByLabel('Código del email').fill('654321');
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    // Con solo el código del email NO se puede cambiar la contraseña: pide el 2FA.
+    await page.getByRole('heading', { name: 'Segundo factor' }).waitFor();
+    await page.getByLabel('Código', { exact: true }).fill('123456');
+    await page.getByRole('button', { name: 'Verificar' }).click();
+    await page.getByRole('heading', { name: 'Nueva contraseña' }).waitFor();
+  });
+
+  await step('recuperar contraseña: validaciones y cambio', async () => {
+    const pass = page.getByLabel('Contraseña nueva', { exact: true });
+    const confirm = page.getByLabel('Repite la contraseña nueva', { exact: true });
+    await pass.fill('corta');
+    await confirm.fill('corta');
+    await pass.evaluate((el) => el.removeAttribute('minlength'));
+    await confirm.evaluate((el) => el.removeAttribute('minlength'));
+    await page.getByRole('button', { name: 'Guardar contraseña' }).click();
+    await page.getByText('La contraseña debe tener al menos 12 caracteres.').waitFor();
+    await pass.fill(NEW_PASSWORD);
+    await confirm.fill(`${NEW_PASSWORD}x`);
+    await page.getByRole('button', { name: 'Guardar contraseña' }).click();
+    await page.getByText('Las contraseñas no coinciden.').waitFor();
+    await pass.fill(USER.password);
+    await confirm.fill(USER.password);
+    await page.getByRole('button', { name: 'Guardar contraseña' }).click();
+    await page.getByText('La contraseña nueva debe ser distinta de la anterior.').waitFor();
+    await pass.fill(NEW_PASSWORD);
+    await confirm.fill(NEW_PASSWORD);
+    await page.getByRole('button', { name: 'Guardar contraseña' }).click();
+    await page.getByRole('heading', { name: 'Ingresar al panel' }).waitFor();
+    await page.getByText(/Contraseña actualizada/).waitFor();
+  });
+
+  await step('la contraseña vieja ya no sirve; la nueva + 2FA da acceso', async () => {
+    await page.getByLabel('Email').fill(USER.email);
+    await page.getByLabel('Contraseña', { exact: true }).fill(USER.password);
+    await page.getByRole('button', { name: 'Ingresar' }).click();
+    await page.getByText('Email o contraseña incorrectos.').waitFor();
+    await page.getByLabel('Contraseña', { exact: true }).fill(NEW_PASSWORD);
+    await page.getByRole('button', { name: 'Ingresar' }).click();
+    await page.getByLabel('Código', { exact: true }).fill('123456');
+    await page.getByRole('button', { name: 'Verificar' }).click();
+    await page.getByRole('heading', { name: 'Contenidos' }).waitFor();
+  });
+
   await step('sin errores de consola relevantes', async () => {
     // Los 400/422 esperados del login y del código incorrecto se registran como recursos fallidos.
     const relevant = consoleErrors.filter((e) => !/Failed to load resource|tile\.openstreetmap|ERR_/.test(e));
@@ -154,5 +222,7 @@ try {
   });
 } finally {
   await browser.close();
+  // Deja el Auth simulado con la contraseña original para a11y.e2e.mjs.
+  await fetch(`${FAKE_AUTH_URL}/__test__/reset-password`, { method: 'POST' }).catch(() => {});
 }
 console.log(results.join('\n'));
