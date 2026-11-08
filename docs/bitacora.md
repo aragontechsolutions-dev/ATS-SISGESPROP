@@ -274,3 +274,11 @@ emails de destino).
 - Se recuperó el acceso a la cuenta del cliente. Se agregó el checklist de endurecimiento de cuentas
   ([despliegue.md](despliegue.md), sección 0.1): método de acceso, 2FA, códigos de recuperación,
   tokens, miembros, integraciones y protección de las vistas previas.
+- **Web desplegada** en Vercel (cuenta del cliente): `privat-web.vercel.app`. Build de 38 s, en
+  producción.
+- Cabeceras verificadas: HSTS, `X-Frame-Options DENY`, `frame-ancestors 'none'`, nosniff,
+  Referrer-Policy, Permissions-Policy y COOP. Se sirve desde el nodo de São Paulo (`gru1`).
+- `Access-Control-Allow-Origin: *` viene de Vercel por defecto. Se aceptó y quedó documentado en
+  [seguridad.md](seguridad.md).
+- No se activó *Speed Insights*: script de terceros, choca con la CSP y requiere declararlo en la
+  política de privacidad.
