@@ -38,6 +38,22 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 | N-3 | Documentos de cada propiedad: ¿Supabase Storage dentro de la plataforma o integración con su Google Drive? | 2/3 |
 | N-4 | ¿El cliente usa Google Workspace (cuenta de empresa) o una cuenta personal de Google? Afecta la integración y la seguridad | 2/3 |
 
+## Entrega del cliente del 11/11/2026 ([análisis](analisis-documentos-cliente-2026-11-11.md))
+
+- **El cliente no aprueba todavía la web:** pide 4 cambios de prioridad alta (posicionamiento,
+  bitácora, niveles y servicios complementarios, promesas financieras).
+- **Plan propuesto:** etapas F1, F2 y F3 (sección 7 del análisis), **pendiente de aprobación**.
+- **Contradicciones a resolver:** C1 a C7 (sección 3).
+- **Preguntas al cliente:** 11 (sección 8).
+- **Respondidas:** N-1 (alquileres en temporada alta: sí, con anexo propio) y N-3 (Drive es
+  interno; la bitácora va en la plataforma).
+- **Siguen faltando:**
+  - P-2 (base de operaciones);
+  - P-5 (15 perfiles; la planilla trae solo 3 ejemplos y rangos "sin fuente oficial");
+  - P-14 (contacto y WhatsApp);
+  - P-15 (política de privacidad);
+  - fotos reales del equipo.
+
 ## Decisiones que requieren aprobación del cliente
 
 - **ADR-010:** borde de los campos de formulario en gris cálido (#686B67) en lugar de #E2DED5, para

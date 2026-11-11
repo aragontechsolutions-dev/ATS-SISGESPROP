@@ -476,3 +476,24 @@ dorada.
 - Suite completa en verde: landing 13/13, panel 19/19, accesibilidad 17/17, API 88/88.
 
 **Recomendación:** plan pago de Render, para que ningún visitante tenga que esperar.
+
+## 2026-11-11 – Entrega del cliente: análisis (sin cambios en la web)
+
+**Recibido:** 14 documentos y 16 imágenes.
+- 5 documentos son idénticos (SHA-256) a los del 04/11.
+- Nuevos: Análisis web v1.0, FAQ, Plan Maestro v1.1, Drive v1.1, Guía y Contrato v1.1, y la
+  planilla de cobro actualizada.
+
+**Hallazgos**
+- **Web:** el cliente no aprueba todavía la versión actual. Pide 4 cambios de prioridad alta.
+- **Planilla:**
+  - la fórmula coincide con el motor;
+  - el costo por km pasa a 0,50;
+  - siguen faltando los 15 perfiles y la base de operaciones.
+- **Imágenes:** la imagen 50 tiene una credencial C2PA de Google que indica que fue generada con
+  IA. No deben presentarse como propiedades ni como equipo reales.
+- **Contradicciones a resolver:** 7, entre ellas la FAQ con "bitácora en tiempo real" frente al
+  Plan Maestro, y las cuentas bancarias separadas frente al contrato.
+
+**Resultado:** [analisis-documentos-cliente-2026-11-11.md](analisis-documentos-cliente-2026-11-11.md),
+con un plan F1/F2/F3 pendiente de aprobación.
