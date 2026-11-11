@@ -37,6 +37,25 @@ peso al JavaScript. La CSP no cambia (`img-src 'self'`).
 - En el pie y en el login, `alt="PRIVAT Gestión de Propiedades"`.
 - Verificado con axe: 17/17.
 
+## Imágenes del sitio (entrega del 11/11/2026)
+
+- **Origen:** 16 imágenes del cliente: 10 de propiedades y 6 de servicios.
+  - **Al menos una** (la casa en el bosque) **está generada con IA**: trae una credencial C2PA de
+    Google, `trainedAlgorithmicMedia`.
+  - **Son ilustrativas.** No se presentan como propiedades administradas por PRIVAT ni como su
+    equipo; las personas con chaleco no son el equipo y los logos de los chalecos no son el de
+    PRIVAT.
+- **Archivos:** `apps/web/public/img/<clave>-{480,768,1408}.webp` (calidad 70) y
+  `<clave>-hero-{768,1408}.webp` (calidad 40, solo para la portada).
+  - Sin metadatos (EXIF, C2PA e ICC eliminados).
+  - Codificadas con Pillow 12.3, porque ImageMagick 6.9 de este entorno ignoraba la calidad WebP.
+- **Catálogo:** `apps/web/src/images.ts`, con las claves, los textos alternativos y la imagen de
+  cada nivel. La API acepta solo esas claves (ADR-018).
+- **Para agregar una imagen hasta que exista D4:**
+  1. convertirla con el mismo procedimiento;
+  2. sumar la clave en `images.ts` y en `IMAGE_KEYS` de `content-schema.ts`;
+  3. agregar su texto alternativo.
+
 ## Pendiente de decidir con el cliente
 
 - **Tipografía de la web.** El texto "Gestión de Propiedades" del logo parece Montserrat, pero

@@ -90,7 +90,8 @@ const supabaseOrigin = process.env.VITE_SUPABASE_URL ? new URL(process.env.VITE_
 const adminCsp = [
   "default-src 'self'",
   "script-src 'self'",
-  `connect-src 'self' ${apiOrigin}${supabaseOrigin ? ` ${supabaseOrigin}` : ''}`,
+  // nominatim: búsqueda de la dirección de la base en el mapa del panel (BaseLocationMap).
+  `connect-src 'self' ${apiOrigin}${supabaseOrigin ? ` ${supabaseOrigin}` : ''} https://nominatim.openstreetmap.org`,
   "img-src 'self' data: https://tile.openstreetmap.org",
   "style-src 'self'",
   "font-src 'self'",

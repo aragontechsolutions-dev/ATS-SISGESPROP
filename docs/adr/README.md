@@ -21,3 +21,5 @@ Cada decisión técnica relevante se registra con su contexto, la decisión y su
 | [ADR-015](ADR-015-aviso-email-resend.md) | Aviso de consultas por email con Resend, sin datos personales | Aceptada |
 | [ADR-016](ADR-016-recuperacion-de-contrasena.md) | Recuperación de contraseña: código por email + 2FA | Aceptada |
 | [ADR-017](ADR-017-api-dormida-render.md) | La web espera a que la API despierte (Render gratuito) | Aceptada |
+| [ADR-018](ADR-018-contenido-f1-e-imagenes.md) | Etapa F1: secciones nuevas, migración de textos sin pisar ediciones, imágenes por lista cerrada | Aceptada |
+| [ADR-019](ADR-019-busqueda-direcciones-nominatim.md) | Mapa de la base con búsqueda de direcciones (Nominatim) | Aceptada |

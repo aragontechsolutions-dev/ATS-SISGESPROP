@@ -1,16 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  ArrayMaxSize,
-  IsArray,
-  IsBoolean,
-  IsDateString,
-  IsDefined,
-  IsInt,
-  IsString,
-  Length,
-  Max,
-  Min,
-} from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsDefined, IsInt, IsString, Length, Matches, Max, Min } from 'class-validator';
 
 /** El valor se valida con el esquema de la sección (content-schema.ts). */
 export class UpdateSectionDto {
@@ -35,6 +24,12 @@ export class UpdateServiceLevelDto {
 }
 
 export class FaqDto {
+  /** Categoría del acordeón (p. ej. "Costos y contratación"). Agrupa las preguntas en la web. */
+  @IsString()
+  @Length(2, 60)
+  @Matches(/^[^\u0000-\u001F\u007F]+$/, { message: 'category: sin caracteres de control' })
+  category!: string;
+
   @IsString()
   @Length(5, 200)
   question!: string;

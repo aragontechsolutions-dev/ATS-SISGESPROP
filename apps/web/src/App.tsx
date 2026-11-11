@@ -2,10 +2,11 @@ import { useState } from 'react';
 import type { LatLng } from './api';
 import { Header } from './sections/Header';
 import { Hero } from './sections/Hero';
-import { Faq, Footer, ProvisionalBanner, Services, Testimonials, Transparency } from './sections/InfoSections';
+import { Bitacora, Complementary, Faq, Footer, ProvisionalBanner, Services, Testimonials, Transparency } from './sections/InfoSections';
 import { Coverage } from './sections/Coverage';
 import { Quoter, type QuoteSelection } from './sections/Quoter';
 import { Contact } from './sections/Contact';
+import { WhatsAppButton } from './components/WhatsAppButton';
 
 /** Landing de una página (Plan Etapa 1, sección 4.1). Estado compartido: mapa → cotizador → contacto. */
 export function App() {
@@ -26,6 +27,8 @@ export function App() {
       <main id="contenido">
         <Hero />
         <Services />
+        <Complementary />
+        <Bitacora />
         <Transparency />
         <Coverage
           point={point}
@@ -40,6 +43,7 @@ export function App() {
         <Contact selection={selection} />
       </main>
       <Footer />
+      <WhatsAppButton />
     </>
   );
 }

@@ -15,7 +15,7 @@ export function Header() {
         </a>
 
         <nav aria-label="Principal" className="hidden xl:block">
-          <ul className="flex items-center gap-6 text-sm">
+          <ul className="flex items-center gap-5 text-sm whitespace-nowrap">
             {content.nav.map((item) => (
               <li key={item.href}>
                 <a href={item.href} className="underline-offset-4 hover:text-accent hover:underline">
@@ -27,7 +27,11 @@ export function Header() {
         </nav>
 
         <div className="hidden items-center gap-3 xl:flex">
-          <ClientAccess />
+          {/* Con 7 enlaces en el menú no entra a 1280 px: "Acceso clientes" (deshabilitado, "Pronto")
+              se muestra en el encabezado desde 2xl; en pantallas menores sigue en el menú móvil. */}
+          <span className="hidden 2xl:contents">
+            <ClientAccess />
+          </span>
           <a href="#contacto" className="btn bg-background whitespace-nowrap text-primary hover:bg-surface">
             {content.hero.cta}
           </a>

@@ -152,6 +152,8 @@ export function Quoter({ point, selection, onSelectionChange }: Props) {
           )}
           {result && (
             <div className="rounded-lg border border-border bg-background p-6 md:p-8" data-testid="quote-result">
+              {/* Hecho del cálculo (no editable): el motor estima sin IVA, como la planilla del cliente. */}
+              <p className="eyebrow">Estimación preliminar · sin IVA</p>
               <dl className="grid gap-6 sm:grid-cols-3">
                 <div>
                   <dt className="text-sm text-text-secondary">Abono mensual · temporada baja</dt>
@@ -167,7 +169,7 @@ export function Quoter({ point, selection, onSelectionChange }: Props) {
                 </div>
               </dl>
               <p className="mt-4 text-sm text-text-secondary">
-                Distancia aproximada desde la base: {Number(result.distanceKm).toLocaleString('es-UY')} km. Importes en USD.
+                Distancia aproximada desde la base: {Number(result.distanceKm).toLocaleString('es-UY')} km. Importes en USD, sin IVA.
               </p>
               <p className="mt-1 text-sm font-semibold">{quoter.disclaimer}</p>
               <a href="#contacto" className="btn-primary mt-6">

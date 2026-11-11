@@ -114,6 +114,8 @@ export interface LeadInput {
   name: string;
   email: string;
   phone?: string;
+  residenceCountry?: string;
+  propertyLocation?: string;
   propertyTypeCode?: string;
   simulationId?: string;
   message?: string;

@@ -70,19 +70,32 @@ A la izquierda está la lista de secciones de la página. Elija una, cambie los 
 | Marca | Nombre comercial |
 | Buscadores (SEO) | Título y descripción que muestra Google |
 | Menú | Textos del menú superior |
-| Portada (hero) | Titular, subtítulo, botón y sellos de confianza |
+| Portada (hero) | Titular, subtítulo, texto complementario, los dos botones, lema, sellos de confianza e **imagen de fondo** |
 | Servicios | Encabezado de la sección y los 3 niveles de servicio |
+| Servicios complementarios | Prestaciones que se suman a cualquier nivel (Puertas Abiertas, preparación de llegadas, temporada alta…), cada una con su **imagen** |
+| Bitácora digital | Texto de la bitácora, qué registra y la nota de disponibilidad ("próximamente") |
 | Transparencia | Los puntos de "Cómo trabajamos" |
 | Cobertura | Textos del mapa |
 | Cotizador | Textos y aviso legal del resultado |
-| Contacto | Teléfono, WhatsApp, email y dirección. Si se dejan vacíos, no se muestran |
+| Preguntas frecuentes (textos) | Título, introducción y el bloque final "¿Tenés otra consulta?" |
+| Contacto | Teléfono, WhatsApp, email y dirección. Si se dejan vacíos, no se muestran. **Con el WhatsApp cargado, aparece un botón fijo "Escríbenos por WhatsApp" en toda la web** |
 | Pie de página | Datos legales y enlaces a la política de privacidad y a los términos (deben empezar con `https://`) |
 
 **Ajustes generales → "Contenido provisorio".** Mientras esté marcado, la web muestra un aviso de
 vista previa y Google no la indexa. **Desmárquelo solo cuando todos los textos estén aprobados.**
 
-**Preguntas frecuentes.** Se agregan al final de la pestaña. Sin preguntas, la sección no aparece en la
-web.
+**Imágenes.** Se elige de una lista de 16 imágenes incluidas en la web, o "Sin imagen". Son
+imágenes **ilustrativas**: no use textos que las presenten como propiedades que PRIVAT administra
+ni como su equipo.
+
+**Preguntas frecuentes.** Están al final de la pestaña, agrupadas por **categoría**. En la web se
+muestran como acordeón: cada categoría se despliega y, dentro, cada pregunta.
+- **Agregar:** complete la categoría (elija una existente o escriba una nueva), la pregunta, la
+  respuesta y el **orden** (número menor = primero), y pulse **Agregar pregunta**.
+- **Editar:** pulse **Editar** en la pregunta, corrija y pulse **Guardar cambios**.
+- **Ocultar o Eliminar.**
+- Los saltos de línea de la respuesta se respetan; sirve para listas con "•".
+- Sin preguntas visibles, la sección no aparece en la web.
 
 **Testimonios.** Cargue **solo testimonios reales con autorización escrita del autor**, e indique la
 fecha de esa autorización. Sin testimonios visibles, la sección no aparece.
@@ -112,7 +125,14 @@ Los decimales van con **punto o coma**. Si un perfil no está configurado, el co
 responde que no hay tarifa para esa combinación e invita a escribir.
 
 ### 4.2 Viáticos y base de operaciones
-- **Base:** escriba un nombre y **haga clic en el mapa** donde está la base. Debe estar en Uruguay.
+- **Base:** escriba un nombre y ubíquela en el mapa de una de estas formas:
+  - **Buscar dirección:** escríbala y pulse **Buscar**, luego elija el resultado correcto. La
+    búsqueda la hace OpenStreetMap y solo encuentra direcciones de Uruguay.
+  - **Clic en el mapa**, o **arrastrar el marcador** para ajustar.
+  - **Coordenadas:** escriba la latitud y la longitud (por ejemplo, copiadas de Google Maps) y pulse
+    **Aplicar coordenadas**.
+
+  Debe estar en Uruguay. **Revise siempre el punto en el mapa** antes de pulsar **Guardar viáticos**.
 - **Radio sin cargo (km):** dentro de ese radio no se cobra traslado.
 - **Factor de ruta:** corrige la distancia en línea recta para aproximarla a la distancia por carretera.
   Valor inicial: 1.3. Conviene ajustarlo con 3 o 4 trayectos reales.
@@ -128,7 +148,7 @@ ni afecta a la web.
 ## 5. Pestaña "Consultas"
 
 - Lista de formularios recibidos desde la web, con la estimación del cotizador si el visitante la
-  adjuntó.
+  adjuntó, y el **país de residencia** y la **ubicación del inmueble** si los completó (son opcionales).
 - Cambie el **estado** (Nueva → Contactada → Cerrada) para organizar el seguimiento.
 - **Exportar CSV** descarga las consultas para abrirlas en Excel. Cada exportación queda registrada.
 

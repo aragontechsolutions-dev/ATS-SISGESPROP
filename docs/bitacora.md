@@ -497,3 +497,45 @@ dorada.
 
 **Resultado:** [analisis-documentos-cliente-2026-11-11.md](analisis-documentos-cliente-2026-11-11.md),
 con un plan F1/F2/F3 pendiente de aprobación.
+
+## 2026-11-11 – Etapa F1 implementada (aprobada por el usuario)
+
+**Hecho** ([ADR-018](adr/ADR-018-contenido-f1-e-imagenes.md), [ADR-019](adr/ADR-019-busqueda-direcciones-nominatim.md))
+- **Portada:** textos del cliente, lema, botones "Solicitar una propuesta" y "Calcular mi abono", y
+  foto de fondo.
+- **SEO** en español; nueva **cobertura**.
+- **Transparencia:** "Registro documental"; fondos alineados al contrato (C3).
+- **Secciones nuevas:**
+  - **Servicios complementarios**, con imágenes;
+  - **Bitácora digital**, como "próximamente" (C1/C2).
+- **FAQ del cliente:** 32 preguntas en 7 categorías.
+  - Acordeón de 2 niveles accesible, con el texto en el HTML.
+  - Editor del panel con categoría, edición y orden.
+- **Cotizador:** "Estimación preliminar · sin IVA" y botón "Solicitar propuesta personalizada".
+- **Formulario:** país de residencia y ubicación del inmueble (opcionales), en el panel y en el CSV.
+- **Botón fijo de WhatsApp:** aparece cuando se cargue el número.
+- **Imágenes:** 16 en WebP responsivo, sin metadatos, por lista cerrada.
+- **Panel:** mapa dedicado para la base, con búsqueda de direcciones (Nominatim), marcador
+  arrastrable y coordenadas.
+- **Base de datos:**
+  - migración que solo agrega columnas;
+  - seed idempotente que no pisa ediciones (probado en 3 escenarios).
+
+**Problemas encontrados y corregidos**
+- **Menú a 1280 px:** con 7 enlaces había 33 px de scroll horizontal. "Acceso clientes" (deshabilitado)
+  pasa a mostrarse desde 2xl, y se agregó una prueba de anchos.
+- **Etiquetas duplicadas:** "Latitud" y "Longitud" aparecían dos veces en la misma página del panel
+  (accesibilidad); se renombraron.
+- **Formularios anidados:** el formulario de viáticos habría quedado dentro de otro; se reorganizó.
+- **Calidad de imagen:** ImageMagick ignoraba la calidad WebP; se reemplazó por Pillow.
+
+**Pruebas**
+- API: 91/91.
+- e2e en limpio: landing 16, panel 19 y accesibilidad 19, todas en verde.
+- Lighthouse: móvil 99/100/100 (SEO 69 por el `noindex` provisorio) y escritorio 100/100/100.
+- **Pendiente F2 (datos del cliente):**
+  - base de operaciones y perfiles;
+  - confirmar 0,50 USD/km;
+  - nombre del nivel 3;
+  - WhatsApp, privacidad y equipo;
+  - testimonios.

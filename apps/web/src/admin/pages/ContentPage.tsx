@@ -7,7 +7,7 @@ interface ContentData {
   sections: Record<string, Record<string, unknown>>;
   missingSections: string[];
   services: Array<{ level: number; name: string; description: string; items: string[] }>;
-  faq: Array<{ id: string; question: string; answer: string; sortOrder: number; visible: boolean }>;
+  faq: Array<{ id: string; category: string; question: string; answer: string; sortOrder: number; visible: boolean }>;
   testimonials: Array<{ id: string; author: string; text: string; authorizedAt: string; visible: boolean }>;
 }
 
@@ -199,7 +199,9 @@ function ServiceLevelForm({ service, onSaved }: { service: ContentData['services
 
 function FaqEditor({ items, onChanged }: { items: ContentData['faq']; onChanged: () => void }) {
   const [status, setStatus] = useState<Status>(null);
-  const empty = { question: '', answer: '', sortOrder: items.length + 1, visible: true };
+  const categories = [...new Set(items.map((f) => f.category))];
+  const nextOrder = items.reduce((m, f) => Math.max(m, f.sortOrder), 0) + 10;
+  const empty = { id: null as string | null, category: categories[0] ?? '', question: '', answer: '', sortOrder: Math.min(nextOrder, 999), visible: true };
   const [draft, setDraft] = useState(empty);
 
   async function run(fn: () => Promise<unknown>, ok: string) {
@@ -207,30 +209,68 @@ function FaqEditor({ items, onChanged }: { items: ContentData['faq']; onChanged:
       await fn();
       setStatus({ kind: 'ok', message: ok });
       onChanged();
+      return true;
     } catch (err) {
       setStatus(errorStatus(err));
+      return false;
     }
+  }
+  const body = (f: Pick<typeof draft, 'category' | 'question' | 'answer' | 'sortOrder' | 'visible'>) => ({
+    category: f.category,
+    question: f.question,
+    answer: f.answer,
+    sortOrder: f.sortOrder,
+    visible: f.visible,
+  });
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    const ok = draft.id
+      ? await run(() => adminJson(`/admin/content/faq/${draft.id}`, send('PUT', body(draft))), 'Pregunta actualizada.')
+      : await run(() => adminJson('/admin/content/faq', send('POST', body(draft))), 'Pregunta agregada.');
+    if (ok) setDraft(empty);
   }
 
   return (
     <Panel title="Preguntas frecuentes (sin preguntas, la sección no se muestra)">
-      <ul className="mb-4 divide-y divide-border">
-        {items.map((f) => (
-          <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <span>{f.sortOrder}. {f.question} {!f.visible && <em className="text-text-secondary">(oculta)</em>}</span>
-            <span className="flex gap-2">
-              <button type="button" className="btn-secondary" onClick={() => void run(() => adminJson(`/admin/content/faq/${f.id}`, send('PUT', { question: f.question, answer: f.answer, sortOrder: f.sortOrder, visible: !f.visible })), 'Actualizada.')}>
-                {f.visible ? 'Ocultar' : 'Mostrar'}
-              </button>
-              <button type="button" className="btn-secondary" onClick={() => window.confirm('¿Eliminar la pregunta?') && void run(() => adminJson(`/admin/content/faq/${f.id}`, { method: 'DELETE' }), 'Eliminada.')}>Eliminar</button>
-            </span>
-          </li>
-        ))}
-      </ul>
-      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void run(() => adminJson('/admin/content/faq', send('POST', draft)), 'Pregunta agregada.').then(() => setDraft(empty)); }}>
+      <p className="mb-4 text-sm text-text-secondary">
+        Las preguntas se agrupan por categoría en la web. El orden es numérico (menor primero); cada categoría aparece en
+        el orden de su primera pregunta.
+      </p>
+      {categories.map((cat) => (
+        <div key={cat} className="mb-4">
+          <h3 className="font-bold">{cat}</h3>
+          <ul className="divide-y divide-border">
+            {items.filter((f) => f.category === cat).map((f) => (
+              <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span>{f.sortOrder}. {f.question} {!f.visible && <em className="text-text-secondary">(oculta)</em>}</span>
+                <span className="flex gap-2">
+                  <button type="button" className="btn-secondary" onClick={() => setDraft({ ...f })}>Editar</button>
+                  <button type="button" className="btn-secondary" onClick={() => void run(() => adminJson(`/admin/content/faq/${f.id}`, send('PUT', body({ ...f, visible: !f.visible }))), 'Actualizada.')}>
+                    {f.visible ? 'Ocultar' : 'Mostrar'}
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={() => window.confirm('¿Eliminar la pregunta?') && void run(() => adminJson(`/admin/content/faq/${f.id}`, { method: 'DELETE' }), 'Eliminada.')}>Eliminar</button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      <form className="mt-6 space-y-3 border-t border-border pt-4" onSubmit={(e) => void save(e)}>
+        <h3 className="font-bold">{draft.id ? 'Editar pregunta' : 'Agregar pregunta'}</h3>
+        <div>
+          <label htmlFor="faq-cat" className="label">Categoría</label>
+          <input id="faq-cat" className="field" list="faq-cats" value={draft.category} maxLength={60} required onChange={(e) => setDraft({ ...draft, category: e.target.value })} />
+          <datalist id="faq-cats">{categories.map((c) => <option key={c} value={c} />)}</datalist>
+          <p className="mt-1 text-xs text-text-secondary">Elige una existente o escribe una nueva.</p>
+        </div>
         <TextField id="faq-q" label="Pregunta" value={draft.question} onChange={(v) => setDraft({ ...draft, question: v })} maxLength={200} required />
-        <TextField id="faq-a" label="Respuesta" value={draft.answer} onChange={(v) => setDraft({ ...draft, answer: v })} maxLength={2000} multiline required />
-        <button className="btn-primary">Agregar pregunta</button>
+        <TextField id="faq-a" label="Respuesta" value={draft.answer} onChange={(v) => setDraft({ ...draft, answer: v })} maxLength={2000} multiline required hint="Los saltos de línea se respetan en la web (útil para listas con •)." />
+        <TextField id="faq-order" label="Orden" type="number" inputMode="numeric" value={String(draft.sortOrder)} onChange={(v) => setDraft({ ...draft, sortOrder: Number(v) || 0 })} required />
+        <div className="flex gap-3">
+          <button className="btn-primary">{draft.id ? 'Guardar cambios' : 'Agregar pregunta'}</button>
+          {draft.id && <button type="button" className="btn-secondary" onClick={() => setDraft(empty)}>Cancelar</button>}
+        </div>
       </form>
       {status && <div className="mt-3"><Alert {...status} /></div>}
     </Panel>

@@ -94,12 +94,37 @@ try {
     await page.getByRole('button', { name: /40 USD\/h, editar Casa premium 400-700 m² nivel 3/ }).waitFor();
   });
 
-  await step('viáticos: marcar la base en el mapa y guardar', async () => {
+  await step('base de operaciones: buscar dirección, rechazar fuera de Uruguay, coordenadas, clic y guardar', async () => {
+    // Nominatim simulado: la prueba no depende de un servicio externo.
+    const searches = [];
+    await page.route('https://nominatim.openstreetmap.org/**', (route) => {
+      searches.push(new URL(route.request().url()));
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          { display_name: 'Rambla Claudio Williman, Punta del Este, Maldonado, Uruguay', lat: '-34.9606', lon: '-54.9489' },
+          { display_name: 'Avenida de Mayo, Buenos Aires, Argentina', lat: '-34.6037', lon: '-58.3816' },
+        ]),
+      });
+    });
     await page.getByLabel('Nombre de la base').fill('Base de prueba (centro)');
-    const map = page.getByTestId('coverage-map');
+    const map = page.getByTestId('base-map');
     await map.locator('.leaflet-control-zoom').waitFor();
+    await page.getByLabel('Buscar dirección').fill('Rambla Punta del Este');
+    await page.getByRole('button', { name: 'Buscar', exact: true }).click();
+    await page.getByRole('button', { name: /Avenida de Mayo/ }).click();
+    await page.getByText('La base debe estar dentro de Uruguay.').waitFor();
+    await page.getByRole('button', { name: /Rambla Claudio Williman/ }).click();
+    await page.getByText('Ubicación: -34.96060, -54.94890').waitFor();
+    assert.equal(searches[0].searchParams.get('countrycodes'), 'uy');
+    await map.locator('.base-marker').waitFor();
+    await page.getByLabel('Latitud de la base').fill('-34.95');
+    await page.getByLabel('Longitud de la base').fill('-54.93');
+    await page.getByRole('button', { name: 'Aplicar coordenadas' }).click();
+    await page.getByText('Ubicación: -34.95000, -54.93000').waitFor();
     const box = await map.boundingBox();
-    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.click(box.x + box.width / 3, box.y + box.height / 3);
     await page.getByText(/Ubicación: -3\d\.\d+/).waitFor();
     await page.getByRole('button', { name: 'Guardar viáticos' }).click();
     await page.getByText('Viáticos guardados en borrador.').waitFor();

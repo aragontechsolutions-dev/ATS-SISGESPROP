@@ -13,6 +13,8 @@ interface Lead {
   email: string;
   phone: string | null;
   propertyType: string | null;
+  residenceCountry: string | null;
+  propertyLocation: string | null;
   message: string | null;
   status: 'NUEVA' | 'CONTACTADA' | 'CERRADA';
   simulation: { serviceLevel: number; lowFee: string; highFee: string; annualFee: string; distanceKm: string } | null;
@@ -73,6 +75,13 @@ export function LeadsPage() {
                   <p className="font-bold">{l.name}</p>
                   <p className="text-sm"><a className="underline" href={`mailto:${l.email}`}>{l.email}</a>{l.phone && ` · ${l.phone}`}</p>
                   <p className="text-sm text-text-secondary">{fmtDate(l.createdAt)}{l.propertyType && ` · ${l.propertyType}`}</p>
+                  {(l.residenceCountry || l.propertyLocation) && (
+                    <p className="text-sm text-text-secondary">
+                      {l.residenceCountry && `Reside en: ${l.residenceCountry}`}
+                      {l.residenceCountry && l.propertyLocation && ' · '}
+                      {l.propertyLocation && `Inmueble en: ${l.propertyLocation}`}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label htmlFor={`st-${l.id}`} className="sr-only">Estado de la consulta de {l.name}</label>

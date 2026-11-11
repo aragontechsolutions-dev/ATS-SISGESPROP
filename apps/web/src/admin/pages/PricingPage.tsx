@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useState, type FormEvent } from 'react';
 import { adminJson, send } from '../http';
 import { Alert, errorStatus, PageTitle, Panel, TextField, useLoad, type Status } from '../ui';
 
-const MapView = lazy(() => import('../../components/MapView'));
+const BaseLocationMap = lazy(() => import('../BaseLocationMap'));
 
 const PROFILE_FIELDS: Array<[key: string, label: string, hint?: string]> = [
   ['visitsPerMonth', 'Visitas por mes'],
@@ -115,12 +115,13 @@ function ProfileForm({ code, level, typeName, initial, onDone }: { code: string;
 }
 
 function TravelForm({ initial, onSaved }: { initial: Travel | null; onSaved: () => void }) {
-  const [v, setV] = useState<Travel>(initial ?? { baseLabel: '', baseLat: -34.9, baseLng: -54.95, freeRadiusKm: '0', routeFactor: '1.3', costPerKm: '0.35', mode: 'POR_KM' });
+  // Sin base guardada: valores iniciales. Costo por km 0,50 = planilla del cliente del 11/11/2026 (a confirmar, C4).
+  const [v, setV] = useState<Travel>(initial ?? { baseLabel: '', baseLat: -34.9, baseLng: -54.95, freeRadiusKm: '0', routeFactor: '1.3', costPerKm: '0.50', mode: 'POR_KM' });
   const [picked, setPicked] = useState(Boolean(initial));
   const [status, setStatus] = useState<Status>(null);
   async function save(e: FormEvent) {
     e.preventDefault();
-    if (!picked) return setStatus({ kind: 'error', message: 'Marca la base de operaciones en el mapa.' });
+    if (!picked) return setStatus({ kind: 'error', message: 'Ubica la base de operaciones en el mapa (búsqueda, clic o coordenadas).' });
     try {
       await adminJson('/admin/pricing/travel', send('PUT', v));
       setStatus({ kind: 'ok', message: 'Viáticos guardados en borrador.' });
@@ -131,26 +132,26 @@ function TravelForm({ initial, onSaved }: { initial: Travel | null; onSaved: () 
   }
   return (
     <Panel title="Viáticos y base de operaciones">
-      <form onSubmit={save} className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
-        <div className="space-y-3">
+      <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+        {/* El mapa tiene sus propios formularios (búsqueda y coordenadas): va fuera de este. */}
+        <form onSubmit={save} className="space-y-3">
           <TextField id="t-label" label="Nombre de la base" value={v.baseLabel} onChange={(x) => setV({ ...v, baseLabel: x })} maxLength={80} required />
-          <p className="text-sm">{picked ? `Ubicación: ${v.baseLat.toFixed(5)}, ${v.baseLng.toFixed(5)}` : 'Haz clic en el mapa para marcar la base.'}</p>
+          <p className="text-sm" aria-live="polite">{picked ? `Ubicación: ${v.baseLat.toFixed(5)}, ${v.baseLng.toFixed(5)}` : 'Ubica la base en el mapa: busca la dirección, haz clic o escribe las coordenadas.'}</p>
           <TextField id="t-radius" label="Radio sin cargo (km)" value={v.freeRadiusKm} onChange={(x) => setV({ ...v, freeRadiusKm: x.replace(',', '.') })} required />
           <TextField id="t-factor" label="Factor de ruta" hint="Entre 1 y 3. Valor inicial 1.3, a calibrar con trayectos reales (P-4)." value={v.routeFactor} onChange={(x) => setV({ ...v, routeFactor: x.replace(',', '.') })} required />
-          <TextField id="t-cost" label="Costo por km (USD)" value={v.costPerKm} onChange={(x) => setV({ ...v, costPerKm: x.replace(',', '.') })} required />
+          <TextField id="t-cost" label="Costo por km (USD)" hint="La planilla del cliente del 11/11/2026 usa 0.50 (a confirmar)." value={v.costPerKm} onChange={(x) => setV({ ...v, costPerKm: x.replace(',', '.') })} required />
           <p className="text-xs text-text-secondary">Modo: por km. El cobro por tramos se habilitará cuando se defina la regla (P-3).</p>
           <button className="btn-primary">Guardar viáticos</button>
           {status && <Alert {...status} />}
-        </div>
+        </form>
         <Suspense fallback={<p>Cargando mapa…</p>}>
-          <MapView
-            base={picked ? { baseLabel: v.baseLabel || 'Base', baseLat: v.baseLat, baseLng: v.baseLng } : null}
-            point={null}
-            onPick={(p) => { setV({ ...v, baseLat: p.lat, baseLng: p.lng }); setPicked(true); }}
-            onOutside={() => setStatus({ kind: 'error', message: 'La base debe estar en Uruguay.' })}
+          <BaseLocationMap
+            value={picked ? { lat: v.baseLat, lng: v.baseLng } : null}
+            onChange={(p) => { setV((cur) => ({ ...cur, baseLat: p.lat, baseLng: p.lng })); setPicked(true); setStatus(null); }}
+            onError={(message) => setStatus({ kind: 'error', message })}
           />
         </Suspense>
-      </form>
+      </div>
     </Panel>
   );
 }
@@ -197,8 +198,8 @@ function TestSimulation({ types, travel }: { types: PricingData['propertyTypes']
           <label htmlFor="ts-level" className="label">Nivel</label>
           <select id="ts-level" className="field" value={level} onChange={(e) => setLevel(Number(e.target.value))}>{[1, 2, 3].map((l) => <option key={l} value={l}>{l}</option>)}</select>
         </div>
-        <TextField id="ts-lat" label="Latitud" value={lat} onChange={setLat} required />
-        <TextField id="ts-lng" label="Longitud" value={lng} onChange={setLng} required />
+        <TextField id="ts-lat" label="Latitud de la propiedad" value={lat} onChange={setLat} required />
+        <TextField id="ts-lng" label="Longitud de la propiedad" value={lng} onChange={setLng} required />
         <div className="sm:col-span-2 lg:col-span-4"><button className="btn-primary">Simular</button></div>
       </form>
       {status && <div className="mt-3"><Alert {...status} /></div>}

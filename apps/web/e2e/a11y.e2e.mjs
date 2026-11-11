@@ -53,6 +53,10 @@ try {
     await page.getByLabel('Nombre y apellido').fill('Prueba');
     await page.getByTestId('turnstile').waitFor({ state: 'attached' });
     await audit(page, `landing con mapa, resultado y formulario (${label})`);
+    const faq = page.getByTestId('faq');
+    await faq.getByRole('button', { name: 'Propietarios en el exterior' }).click();
+    await faq.getByRole('button', { name: /Vivo fuera de Uruguay/ }).click();
+    await audit(page, `landing con preguntas frecuentes abiertas (${label})`);
     if (label === 'móvil') {
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.getByRole('button', { name: 'Menú' }).click();

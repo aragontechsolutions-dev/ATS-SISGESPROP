@@ -150,7 +150,12 @@ primero los cuatro puntos de prioridad alta". La base es válida y no hay que re
   - excepción por urgencia o fuerza mayor.
 - **Siguen sin respuesta:** **N-2** (clasificación A–F) y **N-4** (Google Workspace).
 
-## 7. Plan propuesto (por etapas, a aprobar)
+## 7. Plan propuesto (por etapas)
+
+> **Estado (11/11/2026):** el usuario **aprobó la Etapa F1** y las decisiones C1/C2 (bitácora como
+> "próximamente") y C3 (texto de fondos alineado al contrato), y pidió además **un mapa en el panel
+> para ubicar la base de operaciones**. F1 está **implementada** (ADR-018 y ADR-019). F2 y F3 siguen
+> esperando datos del cliente.
 
 ### Etapa F1 – Ajustes de la web con lo que ya entregó el cliente (no depende de datos nuevos)
 1. **Portada:**

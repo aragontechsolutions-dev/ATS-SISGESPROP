@@ -85,6 +85,8 @@ model ServiceLevel {
 
 model Faq {
   id        String  @id @default(uuid()) @db.Uuid
+  /// Categoría del acordeón (las 7 del documento FAQ del cliente). Agrupa las preguntas en la web.
+  category  String  @default("General")
   question  String
   answer    String
   sortOrder Int     @default(0) @map("sort_order")
@@ -274,6 +276,10 @@ model Lead {
   simulationId   String?       @unique @map("simulation_id") @db.Uuid
   simulation     Simulation?   @relation(fields: [simulationId], references: [id])
   message        String?
+  /// País de residencia del propietario (opcional; el Plan Maestro prioriza propietarios en el exterior).
+  residenceCountry String?     @map("residence_country")
+  /// Ubicación del inmueble en texto libre (opcional; localidad o zona, no la dirección exacta).
+  propertyLocation String?     @map("property_location")
   status         LeadStatus    @default(NUEVA)
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
 

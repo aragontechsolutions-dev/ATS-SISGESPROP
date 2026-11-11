@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { content } from '../content';
 import { Logo } from '../components/Logo';
+import { SiteImage } from '../components/SiteImage';
+import { LEVEL_IMAGE } from '../images';
 
 /** Banner visible mientras el contenido sea provisorio (plan, sección 9). */
 export function ProvisionalBanner() {
@@ -24,7 +27,9 @@ export function Services() {
         <p className="mt-4 max-w-2xl text-lg text-text-secondary">{services.intro}</p>
         <ol className="mt-12 grid gap-6 md:grid-cols-3">
           {services.levels.map((lvl) => (
-            <li key={lvl.level} className="flex flex-col rounded-lg border border-border bg-surface p-6 md:p-8">
+            <li key={lvl.level} className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface">
+              <SiteImage image={LEVEL_IMAGE[lvl.level]} sizes="(min-width: 768px) 33vw, 100vw" className="aspect-[16/9] w-full object-cover" />
+              <div className="flex flex-col p-6 md:p-8">
               <span className="text-sm font-semibold text-text-secondary">Nivel {lvl.level}</span>
               <div className="mt-2 mb-4 h-px w-10 bg-accent" aria-hidden="true" />
               <h3 className="text-xl font-bold text-text-primary">{lvl.name}</h3>
@@ -39,9 +44,79 @@ export function Services() {
                   </li>
                 ))}
               </ul>
+              </div>
             </li>
           ))}
         </ol>
+      </div>
+    </section>
+  );
+}
+
+/** Servicios complementarios (Plan Maestro v1.1): se suman a cualquier nivel, se presupuestan aparte. */
+export function Complementary() {
+  const { complementary } = content;
+  if (complementary.items.length === 0) return null;
+  return (
+    <section id="complementarios" className="section bg-surface" aria-labelledby="complementarios-titulo">
+      <div className="container-page">
+        <p className="eyebrow">{complementary.eyebrow}</p>
+        <h2 id="complementarios-titulo" className="heading max-w-3xl">
+          {complementary.title}
+        </h2>
+        <p className="mt-4 max-w-2xl text-lg text-text-secondary">{complementary.intro}</p>
+        <ul className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {complementary.items.map((item) => (
+            <li key={item.title} className="flex flex-col overflow-hidden rounded-lg border border-border bg-background">
+              {item.image !== 'ninguna' && (
+                <SiteImage image={item.image} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="aspect-[16/9] w-full object-cover" />
+              )}
+              <div className="p-6">
+                <h3 className="text-xl font-bold">{item.title}</h3>
+                <p className="mt-2 text-text-secondary">{item.text}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {complementary.note && <p className="mt-8 text-sm text-text-secondary">{complementary.note}</p>}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Bitácora digital (diferencial del Plan Maestro). Etapa 2: todavía no hay acceso de clientes, por
+ * eso el texto la anuncia sin prometer disponibilidad inmediata ni "tiempo real" (C1/C2).
+ */
+export function Bitacora() {
+  const { bitacora } = content;
+  return (
+    <section id="bitacora" className="section bg-primary text-text-on-dark" aria-labelledby="bitacora-titulo">
+      <div className="container-page grid items-center gap-12 lg:grid-cols-2">
+        <div>
+          <p className="mb-3 text-sm font-semibold tracking-widest text-text-on-dark/85 uppercase">{bitacora.eyebrow}</p>
+          <h2 id="bitacora-titulo" className="text-3xl font-bold tracking-tight md:text-4xl">
+            {bitacora.title}
+          </h2>
+          <p className="mt-6 text-lg text-text-on-dark/90">{bitacora.text}</p>
+          <ul className="mt-8 grid gap-5 sm:grid-cols-2">
+            {bitacora.items.map((item) => (
+              <li key={item.title}>
+                <div className="h-px w-10 bg-accent" aria-hidden="true" />
+                <h3 className="mt-3 font-bold">{item.title}</h3>
+                <p className="mt-1 text-sm text-text-on-dark/85">{item.text}</p>
+              </li>
+            ))}
+          </ul>
+          {bitacora.note && (
+            <p className="mt-8 rounded-md border border-text-on-dark/30 p-4 text-sm" role="note">
+              {bitacora.note}
+            </p>
+          )}
+        </div>
+        {bitacora.image !== 'ninguna' && (
+          <SiteImage image={bitacora.image} sizes="(min-width: 1024px) 50vw, 100vw" className="aspect-[16/9] w-full rounded-lg object-cover" />
+        )}
       </div>
     </section>
   );
@@ -56,7 +131,7 @@ export function Transparency() {
         <h2 id="transparencia-titulo" className="heading">
           {transparency.title}
         </h2>
-        <div className="mt-12 grid gap-10 md:grid-cols-3">
+        <div className="mt-12 grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           {transparency.items.map((item) => (
             <div key={item.title}>
               {/* Detalle dorado como línea (no como texto): el dorado sobre fondo claro no llega a 3:1 (ADR-010). */}
@@ -93,25 +168,107 @@ export function Testimonials() {
   );
 }
 
-/** Preguntas frecuentes: desplegables nativos (accesibles por teclado). Vacío = oculto. */
+/**
+ * Preguntas frecuentes (especificación del cliente, PRIVAT_FAQ_especificacion_web): acordeón de dos
+ * niveles (categoría → pregunta), cada uno independiente. Botones con aria-expanded/aria-controls,
+ * operable con teclado, encabezado por categoría. El texto está en el HTML aunque esté cerrado
+ * (atributo hidden), así lo leen los buscadores. Sin preguntas, la sección no existe.
+ */
 export function Faq() {
-  if (content.faq.length === 0) return null;
+  const { faq, faqSection } = content;
+  const [openCats, setOpenCats] = useState<Set<number>>(() => new Set());
+  const [openQs, setOpenQs] = useState<Set<string>>(() => new Set());
+  if (faq.length === 0) return null;
+
+  const categories: Array<{ name: string; items: typeof faq }> = [];
+  for (const f of faq) {
+    const cat = categories.find((c) => c.name === f.category);
+    if (cat) cat.items.push(f);
+    else categories.push({ name: f.category, items: [f] });
+  }
+  const toggle = <T,>(set: Set<T>, key: T) => {
+    const next = new Set(set);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    return next;
+  };
+
   return (
     <section id="preguntas" className="section bg-background" aria-labelledby="faq-titulo">
       <div className="container-page max-w-3xl">
+        <p className="eyebrow">{faqSection.eyebrow}</p>
         <h2 id="faq-titulo" className="heading">
-          Preguntas frecuentes
+          {faqSection.title}
         </h2>
-        <div className="mt-8 divide-y divide-border border-y border-border">
-          {content.faq.map((f) => (
-            <details key={f.question} className="group py-4">
-              <summary className="cursor-pointer list-none text-lg font-semibold">{f.question}</summary>
-              <p className="mt-3 text-text-secondary">{f.answer}</p>
-            </details>
-          ))}
+        <p className="mt-4 text-lg text-text-secondary">{faqSection.intro}</p>
+        <div className="mt-10 border-t border-border" data-testid="faq">
+          {categories.map((cat, ci) => {
+            const catOpen = openCats.has(ci);
+            return (
+              <div key={cat.name} className="border-b border-border">
+                <h3>
+                  <button
+                    type="button"
+                    id={`faq-cat-${ci}`}
+                    aria-expanded={catOpen}
+                    aria-controls={`faq-cat-panel-${ci}`}
+                    onClick={() => setOpenCats((s) => toggle(s, ci))}
+                    className="flex min-h-12 w-full items-center justify-between gap-4 py-5 text-left text-xl font-bold"
+                  >
+                    {cat.name}
+                    <ToggleIcon open={catOpen} />
+                  </button>
+                </h3>
+                <div id={`faq-cat-panel-${ci}`} hidden={!catOpen} className="pb-4">
+                  <ul className="divide-y divide-border border-t border-border">
+                    {cat.items.map((f, qi) => {
+                      const key = `${ci}-${qi}`;
+                      const qOpen = openQs.has(key);
+                      return (
+                        <li key={f.question}>
+                          <button
+                            type="button"
+                            id={`faq-q-${key}`}
+                            aria-expanded={qOpen}
+                            aria-controls={`faq-a-${key}`}
+                            onClick={() => setOpenQs((s) => toggle(s, key))}
+                            className="flex min-h-12 w-full items-center justify-between gap-4 py-4 pl-2 text-left font-semibold"
+                          >
+                            {f.question}
+                            <ToggleIcon open={qOpen} small />
+                          </button>
+                          <div id={`faq-a-${key}`} hidden={!qOpen} className="pb-5 pl-2 whitespace-pre-line text-text-secondary">
+                            {f.answer}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-10 rounded-lg border border-border bg-surface p-6">
+          <h3 className="text-xl font-bold">{faqSection.closingTitle}</h3>
+          <p className="mt-2 text-text-secondary">{faqSection.closingText}</p>
+          <a href="#contacto" className="btn-primary mt-4">
+            {faqSection.closingCta}
+          </a>
         </div>
       </div>
     </section>
+  );
+}
+
+/** Indicador +/− (decorativo: el estado lo anuncia aria-expanded). */
+function ToggleIcon({ open, small = false }: { open: boolean; small?: boolean }) {
+  const size = small ? 18 : 22;
+  return (
+    <svg aria-hidden="true" className="shrink-0 text-primary" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M5 12h14" />
+      {!open && <path d="M12 5v14" />}
+    </svg>
   );
 }
 
@@ -122,7 +279,7 @@ export function Footer() {
       <div className="container-page grid gap-8 md:grid-cols-3">
         <div>
           <Logo variant="blanco" alt={`${brand.name} Gestión de Propiedades`} className="h-14 w-auto" />
-          <p className="mt-2 text-sm text-text-on-dark/80">Property Management técnico · Uruguay</p>
+          <p className="mt-2 text-sm text-text-on-dark/80">{content.hero.slogan ?? 'Gestión de propiedades · Uruguay'}</p>
         </div>
         <ul className="space-y-2 text-sm">
           {contact.email && (

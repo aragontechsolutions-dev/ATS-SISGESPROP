@@ -42,7 +42,7 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 
 - **El cliente no aprueba todavía la web:** pide 4 cambios de prioridad alta (posicionamiento,
   bitácora, niveles y servicios complementarios, promesas financieras).
-- **Plan propuesto:** etapas F1, F2 y F3 (sección 7 del análisis), **pendiente de aprobación**.
+- **Plan:** la Etapa F1 está **implementada** (ADR-018 y ADR-019). F2 (datos del cliente) y F3 (cotizador v2) siguen pendientes (sección 7 del análisis).
 - **Contradicciones a resolver:** C1 a C7 (sección 3).
 - **Preguntas al cliente:** 11 (sección 8).
 - **Respondidas:** N-1 (alquileres en temporada alta: sí, con anexo propio) y N-3 (Drive es
