@@ -122,6 +122,13 @@ try {
       await page.setViewportSize({ width, height: 900 });
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       assert.ok(overflow <= 0, `scroll horizontal de ${overflow}px a ${width}px`);
+      // El contenido del encabezado debe entrar en SU contenedor (no solo en la pantalla): un
+      // desborde oculto depende de las fuentes del sistema y aparece en otros equipos.
+      const header = await page.evaluate(() => {
+        const row = document.querySelector('header > div');
+        return { free: row.clientWidth - row.scrollWidth, right: Math.max(...[...row.children].map((c) => c.getBoundingClientRect().right)), limit: row.getBoundingClientRect().right };
+      });
+      assert.ok(header.free >= 0 && header.right <= header.limit + 0.5, `el encabezado no entra en su contenedor a ${width}px`);
     }
     await page.setViewportSize({ width: 1366, height: 900 });
   });

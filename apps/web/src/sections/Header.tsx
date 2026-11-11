@@ -9,7 +9,9 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-primary text-text-on-dark">
-      <div className="container-page flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
+      {/* Contenedor propio, más ancho que el de las secciones (max-w-6xl = 1152 px): con 7 enlaces,
+          "Acceso clientes" y el botón de contacto el contenido no entra en 1152 px (CI, 11/11/2026). */}
+      <div className="mx-auto flex h-16 w-full max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-6">
         <a href="#inicio" className="shrink-0" aria-label={`${content.brand.name}, ir al inicio`}>
           <Logo variant="blanco" alt="" className="h-11 w-auto" />
         </a>

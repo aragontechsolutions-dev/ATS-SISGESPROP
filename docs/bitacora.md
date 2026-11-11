@@ -528,6 +528,15 @@ con un plan F1/F2/F3 pendiente de aprobación.
   (accesibilidad); se renombraron.
 - **Formularios anidados:** el formulario de viáticos habría quedado dentro de otro; se reorganizó.
 - **Calidad de imagen:** ImageMagick ignoraba la calidad WebP; se reemplazó por Pillow.
+- **Encabezado a 1536 px (detectado por el CI del PR #9):** el contenido del encabezado (7 enlaces,
+  "Acceso clientes" y el botón de contacto) medía 1268 px y no entraba en el contenedor de 1152 px
+  (`max-w-6xl`). En local no generaba scroll porque aún cabía en la pantalla; con las fuentes del CI
+  (unos 80 px más anchas) desbordó 5 px.
+  - Corrección: el encabezado usa un contenedor propio de hasta 1536 px (`max-w-[96rem]`); quedan unos
+    245 px de espacio libre a 1280 y a 1536 px.
+  - Prueba: además del scroll de la página, ahora se verifica que el contenido del encabezado entre en
+    su contenedor a cada ancho. Lección: medir el desborde del elemento, no solo el de la página,
+    porque depende de las fuentes de cada equipo.
 
 **Pruebas**
 - API: 91/91.
