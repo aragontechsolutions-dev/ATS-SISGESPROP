@@ -10,7 +10,9 @@ import { APP_CONFIG, type AppConfig } from '../config/app-config.ts';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleDestroy {
   constructor(@Inject(APP_CONFIG) config: AppConfig) {
-    super({ adapter: new PrismaPg({ connectionString: config.databaseUrl }) });
+    // connectionTimeoutMillis: si la base no responde (p. ej. proyecto pausado), la petición falla
+    // a los 10 s con un error en el log, en lugar de quedar colgada sin límite.
+    super({ adapter: new PrismaPg({ connectionString: config.databaseUrl, connectionTimeoutMillis: 10_000 }) });
   }
 
   async onModuleDestroy(): Promise<void> {

@@ -307,6 +307,7 @@ en GoDaddy.
      - El build de Vercel reintenta la lectura del contenido durante unos 90 s (6 intentos ×
        15 s, ADR-014), justamente para dar tiempo a que Render despierte.
      - Pasar al plan pago es un cambio de plan en Render; no hay que tocar nada del código.
+     - **Verificado en producción (10/11/2026):** el cotizador fallaba con la API dormida. La web ahora espera hasta 90 s y avisa al visitante ([ADR-017](adr/ADR-017-api-dormida-render.md)). El primer visitante tras la inactividad espera alrededor de un minuto: el plan pago lo elimina.
    - *Root directory*: vacío (la raíz del monorepo).
    - *Build command*:
      ```bash
