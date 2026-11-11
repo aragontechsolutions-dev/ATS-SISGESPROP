@@ -11,6 +11,7 @@ type Field =
   | { kind: 'email'; nullable: true }
   | { kind: 'boolean' }
   | { kind: 'enum'; values: readonly string[] }
+  | { kind: 'image' }
   | { kind: 'stringArray'; maxItems: number; max: number }
   | { kind: 'objectArray'; maxItems: number; fields: Record<string, Field> };
 
@@ -53,7 +54,27 @@ export const IMAGE_KEYS = [
   'inspeccion-azotea',
   'inspeccion-tablero',
 ] as const;
-const image: Field = { kind: 'enum', values: ['ninguna', ...IMAGE_KEYS] };
+/**
+ * Campo imagen: 'ninguna', una clave fija (IMAGE_KEYS) o una imagen subida desde el panel
+ * ("media:<uuid>", Etapa D4). El formato se valida aquí; que la imagen exista lo comprueba el
+ * controlador contra la tabla media_asset.
+ */
+const image: Field = { kind: 'image' };
+export const MEDIA_KEY_RE = /^media:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+const FIXED_IMAGES: readonly string[] = ['ninguna', ...IMAGE_KEYS];
+
+/** Ids de las imágenes subidas que usa un valor de contenido (recorre todo el JSON). */
+export function mediaIdsIn(value: unknown, out = new Set<string>()): Set<string> {
+  if (typeof value === 'string') {
+    const m = MEDIA_KEY_RE.exec(value);
+    if (m) out.add(m[1]!);
+  } else if (Array.isArray(value)) {
+    for (const v of value) mediaIdsIn(v, out);
+  } else if (value && typeof value === 'object') {
+    for (const v of Object.values(value)) mediaIdsIn(v, out);
+  }
+  return out;
+}
 
 export const CONTENT_SECTIONS = {
   settings: {
@@ -174,6 +195,11 @@ function validateField(path: string, field: Field, value: unknown, errors: strin
       return value;
     case 'enum':
       if (typeof value !== 'string' || !field.values.includes(value)) errors.push(`${path}: valor no permitido`);
+      return value;
+    case 'image':
+      if (typeof value !== 'string' || !(FIXED_IMAGES.includes(value) || MEDIA_KEY_RE.test(value))) {
+        errors.push(`${path}: imagen no permitida`);
+      }
       return value;
     case 'stringArray': {
       if (!Array.isArray(value)) return void errors.push(`${path}: debe ser una lista`);

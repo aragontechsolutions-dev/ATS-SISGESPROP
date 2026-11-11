@@ -58,6 +58,9 @@ export class AdminPublishController {
     if (missing.length) {
       throw new UnprocessableEntityException({ message: 'Faltan secciones de contenido', missing });
     }
+    if (this.drafts.missingMedia(content).length) {
+      throw new UnprocessableEntityException('El contenido usa una imagen que ya no existe: elige otra antes de publicar.');
+    }
     const warnings: string[] = [];
     if (pricing) {
       // Defensa: cada perfil debe poder calcularse con el motor y el snapshot debe ser válido.

@@ -18,7 +18,7 @@ import type { AdminPrincipal } from '../../auth/auth.guard.ts';
 import { CurrentAdmin } from '../current-admin.decorator.ts';
 import { audit } from '../audit.ts';
 import { DraftsService } from '../drafts.service.ts';
-import { CONTENT_SECTIONS, isContentSection, validateSection } from './content-schema.ts';
+import { CONTENT_SECTIONS, isContentSection, mediaIdsIn, validateSection } from './content-schema.ts';
 import { FaqDto, TestimonialDto, UpdateSectionDto, UpdateServiceLevelDto } from './content.dto.ts';
 
 /**
@@ -56,6 +56,14 @@ export class AdminContentController {
     if (!isContentSection(section)) throw new NotFoundException('Sección inexistente');
     const result = validateSection(section, dto.value);
     if (!result.ok) throw new BadRequestException({ message: 'Contenido inválido', errors: result.errors });
+    // Imágenes subidas (Etapa D4): deben existir. Evita referencias a ids inventados.
+    const mediaIds = [...mediaIdsIn(result.value)];
+    if (mediaIds.length) {
+      const found = await this.prisma.mediaAsset.count({ where: { id: { in: mediaIds } } });
+      if (found !== mediaIds.length) {
+        throw new BadRequestException({ message: 'Contenido inválido', errors: [`${section}: la imagen elegida no existe`] });
+      }
+    }
 
     // Ya validado y normalizado por el esquema de la sección.
     const value = result.value as Prisma.InputJsonValue;

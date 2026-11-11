@@ -10,6 +10,7 @@ import {
   memoryStore,
   recordingDeploy,
   resetData,
+  seedContentSections,
   signToken,
   testConfig,
 } from './helpers.ts';
@@ -337,6 +338,39 @@ describe('API de imágenes del panel', { skip }, () => {
     assert.ok(![...store.files.keys()].some((k) => k.startsWith(free)));
     assert.ok(await ctx.prisma.auditLog.findFirst({ where: { action: 'media.delete', entityId: free } }));
     assert.equal((await call('DELETE', `/admin/media/${free}`)).status, 404);
+  });
+
+  it('el contenido acepta una imagen subida existente y rechaza ids inexistentes, URLs y formatos raros', async () => {
+    const { id } = (await (await upload(jpeg, 'Fachada de la casa')).json()) as { id: string };
+    const hero = seedContentSections().hero as Record<string, unknown>;
+    const put = (image: string) => call('PUT', '/admin/content/sections/hero', { value: { ...hero, image } });
+    assert.equal((await put(`media:${id}`)).status, 200);
+    assert.equal((await put('casa-frente-mar')).status, 200);
+    assert.equal((await put('ninguna')).status, 200);
+    const missing = await put('media:0b6b8f9e-6a1e-4c55-9a43-2d1e8f7c6b5a');
+    assert.equal(missing.status, 400);
+    assert.match(JSON.stringify(await missing.json()), /no existe/);
+    for (const bad of ['https://evil.example/x.webp', 'media:../../x', `media:${id.toUpperCase()}`, `media:${id} `, 'javascript:alert(1)', '/img/casa.webp']) {
+      assert.equal((await put(bad)).status, 400, bad);
+    }
+  });
+
+  it('al publicar, la publicación lleva la URL pública y el texto alternativo de cada imagen subida', async () => {
+    const { id } = (await (await upload(jpeg, 'Casa frente al mar en Punta del Este')).json()) as { id: string };
+    for (const [section, value] of Object.entries(seedContentSections())) {
+      const v = section === 'hero' ? { ...(value as object), image: `media:${id}` } : value;
+      assert.equal((await call('PUT', `/admin/content/sections/${section}`, { value: v })).status, 200, section);
+    }
+    const pub = await call('POST', '/admin/publications', {});
+    assert.equal(pub.status, 201, await pub.clone().text());
+    const content = ((await (await call('GET', '/public/content', undefined, null)).json()) as { content: Record<string, any> }).content;
+    assert.equal(content.sections.hero.image, `media:${id}`);
+    assert.deepEqual(content.media, { [id]: { alt: 'Casa frente al mar en Punta del Este', baseUrl: `${store.publicBaseUrl}${id}/` } });
+    // Solo las imágenes usadas: no se publica el listado completo de la biblioteca.
+    await upload(jpeg, 'Otra imagen sin usar');
+    assert.equal(Object.keys(content.media).length, 1);
+    // Usada en una publicación: no se puede borrar (la versión se puede restaurar).
+    assert.equal((await call('DELETE', `/admin/media/${id}`)).status, 409);
   });
 
   it('sin clave de Storage: lista vacía, subida 503', async () => {
