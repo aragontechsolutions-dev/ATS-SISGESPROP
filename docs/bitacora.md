@@ -554,3 +554,42 @@ con un plan F1/F2/F3 pendiente de aprobación.
   - nombre del nivel 3;
   - WhatsApp, privacidad y equipo;
   - testimonios.
+
+## 2026-11-11 – Plantilla de perfiles (P-5) y Etapa D4: imágenes subidas desde el panel
+
+**Plantilla de los 15 perfiles** ([`plantillas/PRIVAT_15_perfiles_cotizador.xlsx`](plantillas/PRIVAT_15_perfiles_cotizador.xlsx)):
+- 4 hojas: Instrucciones, Perfiles (15 filas para completar), Parámetros (costo por km 0,50 a
+  confirmar y km de referencia) y Ejemplo (las 3 propiedades de la planilla del cliente).
+- Las columnas grises calculan el abono con la **misma fórmula** del motor; con 0,50 USD/km, Casa
+  San Rafael da 1.131,60, igual que el análisis. Validación de datos en las celdas (no negativos,
+  prima 0–100 %, meses 0–12).
+
+**Etapa D4** ([ADR-020](adr/ADR-020-imagenes-subidas-storage.md)), en 4 sub-etapas:
+1. **D4.1 API:** `POST/GET/PATCH/DELETE /admin/media`; `sharp` 0.35.5 con lectores de libvips
+   bloqueados salvo JPEG/PNG/WebP; firma binaria; 10 MB / 40 MP / mínimo 960 × 540; redibujo en 5
+   WebP sin metadatos; Supabase Storage con clave secreta solo en el servidor; auditoría.
+2. **D4.2 Contenido:** campo imagen acepta `media:<uuid>` existente; la publicación guarda URL y
+   texto alternativo de las imágenes usadas.
+3. **D4.3 Web y panel:** pestaña *Imágenes*, selector con vista previa, `SiteImage` con imágenes
+   subidas (solo la carpeta exacta del Storage del proyecto) y CSP `img-src` con Supabase.
+4. **D4.4:** Storage simulado en el e2e, revisión de seguridad y documentación.
+
+**Problemas encontrados y corregidos**
+- **Protección de secretos de GitHub:** bloqueó el push por una clave **falsa** de prueba con forma
+  de `sb_secret_…`. No se pidió desbloquearla: las claves de prueba se arman en tiempo de ejecución
+  y el commit se rehízo antes de llegar a GitHub.
+- **`adminFetch` ponía `content-type: application/json` a todo cuerpo**, lo que habría roto la
+  subida (multipart). Ahora solo con cuerpo de texto.
+- **Documentación de Supabase inaccesible** desde el entorno de desarrollo: los endpoints y
+  cabeceras de Storage se tomaron del código del cliente oficial `@supabase/storage-js` 2.118
+  instalado en el proyecto, no de memoria.
+- **Postura de secretos:** hasta ahora el sistema no usaba ninguna clave privilegiada de Supabase;
+  D4 requiere una. Se documentó el riesgo y se recomienda una clave dedicada y revocable.
+
+**Pruebas**
+- API: 118/118 (27 nuevas).
+- e2e en limpio: landing 16, panel 20 (paso nuevo de imágenes) y accesibilidad 19.
+- Landing compilada con una imagen subida: carga desde Storage, sin errores de CSP.
+- `npm audit`: 0 vulnerabilidades.
+
+**Siguiente:** activar en producción (§7.2 de despliegue.md) y recibir los 15 perfiles del cliente.

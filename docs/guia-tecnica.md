@@ -74,6 +74,8 @@ Ver `apps/api/.env.example`. La API **no arranca** si falta una variable crític
 | `LEAD_NOTIFY_TO` | Destinatarios del aviso (1 a 10, separados por coma) |
 | `PANEL_URL` | URL del panel incluida en el aviso (`https` en producción) |
 | `VERCEL_DEPLOY_HOOK_URL` | Opcional y secreto. "Publicar" lo llama para recompilar la web |
+| `SUPABASE_SECRET_KEY` | Opcional y secreto. Activa la subida de imágenes a Supabase Storage ([ADR-020](adr/ADR-020-imagenes-subidas-storage.md)); sin ella `POST /admin/media` responde 503 |
+| `MEDIA_BUCKET` | Opcional. Bucket público de imágenes (por defecto `privat-media`) |
 | `SHADOW_DATABASE_URL` | Solo desarrollo: base vacía y descartable para `prisma migrate diff --from-migrations` |
 
 ### 3.4 bis Variables de la web (`apps/web/.env.example`)
@@ -136,6 +138,10 @@ curl localhost:3000/health
 | `PATCH /admin/leads/:id/status` | `NUEVA`, `CONTACTADA` o `CERRADA` |
 | `GET /admin/leads/export.csv?status=` | CSV con BOM y protegido contra inyección de fórmulas (se audita) |
 | `GET /admin/audit?page=` | Registro de cambios con antes/después |
+| `GET /admin/media` | Imágenes subidas (miniatura, texto alternativo) y si la subida está activada |
+| `POST /admin/media` | Subir imagen (multipart: `file` + `alt`). Valida, redibuja en 5 WebP sin metadatos y guarda en Storage (se audita) |
+| `PATCH /admin/media/:id` | Cambiar el texto alternativo (se audita) |
+| `DELETE /admin/media/:id` | Borrar; 409 si se usa en el borrador o en una publicación (se audita) |
 
 Respuestas de `POST /public/leads`: 201 `{ ok: true }`; 400 datos inválidos o sin consentimiento;
 403 anti-spam no superado (no se guarda nada); 429 demasiados envíos.
