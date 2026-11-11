@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { api, ApiError } from '../api';
+import { api, ApiError, ensureApiAwake } from '../api';
 import { content, PROPERTY_TYPES } from '../content';
 import { Turnstile } from '../components/Turnstile';
+import { ApiWakingNotice } from '../components/ApiWakingNotice';
 import type { QuoteSelection } from './Quoter';
 
 const SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY ?? '';
@@ -93,7 +94,11 @@ export function Contact({ selection }: Props) {
           method="post"
           className="rounded-lg border border-border bg-surface p-6 md:p-8"
           onSubmit={onSubmit}
-          onFocusCapture={() => setEngaged(true)}
+          onFocusCapture={() => {
+            setEngaged(true);
+            // Despierta la API mientras el visitante escribe (plan gratuito de Render, ver api.ts).
+            void ensureApiAwake();
+          }}
           aria-describedby="form-estado"
         >
           {simulationId && (
@@ -165,6 +170,7 @@ export function Contact({ selection }: Props) {
           </button>
 
           <div id="form-estado" aria-live="polite" className="mt-4">
+            <ApiWakingNotice />
             {status.kind === 'sent' && (
               <p className="font-semibold text-success" role="status">
                 <span aria-hidden="true">✓ </span>Recibimos tu consulta. Te contactaremos a la brevedad.

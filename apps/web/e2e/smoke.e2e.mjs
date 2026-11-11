@@ -200,6 +200,28 @@ try {
     await m.screenshot({ path: `${SHOTS_DIR}/landing-movil.png` });
   }
   await mctx.close();
+
+  await step('API dormida (Render gratuito): avisa, espera y luego calcula sin error', async () => {
+    const wctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+    const w = await wctx.newPage();
+    // Como Render mientras despierta: responde una página HTML sin cabeceras CORS durante unos segundos.
+    let wakeAt = Infinity;
+    await w.route(/127\.0\.0\.1:3000\//, (route) =>
+      Date.now() < wakeAt ? route.fulfill({ status: 200, contentType: 'text/html', body: '<html>SERVICE WAKING UP</html>' }) : route.continue(),
+    );
+    await w.goto(WEB_URL, { waitUntil: 'networkidle' });
+    wakeAt = Date.now() + 6_000;
+    await w.locator('#cobertura').scrollIntoViewIfNeeded();
+    const map = w.getByTestId('coverage-map');
+    await map.locator('.leaflet-control-zoom').waitFor({ timeout: 15_000 });
+    const box = await map.boundingBox();
+    await w.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await w.getByTestId('api-waking').first().waitFor({ timeout: 5_000 });
+    await w.getByTestId('travel-estimate').waitFor({ timeout: 30_000 });
+    assert.equal(await w.getByTestId('api-waking').count(), 0, 'el aviso debe desaparecer al despertar');
+    assert.equal(await w.getByText('No pudimos conectar con el servidor').count(), 0);
+    await wctx.close();
+  });
 } finally {
   await browser.close();
 }

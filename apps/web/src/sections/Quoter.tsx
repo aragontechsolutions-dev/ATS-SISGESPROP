@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { api, ApiError, formatUsd, type LatLng, type SimulationResult } from '../api';
+import { api, ApiError, ensureApiAwake, formatUsd, type LatLng, type SimulationResult } from '../api';
 import { content, PROPERTY_TYPES } from '../content';
+import { ApiWakingNotice } from '../components/ApiWakingNotice';
 
 export interface QuoteSelection {
   propertyTypeCode: string | null;
@@ -57,6 +58,8 @@ export function Quoter({ point, selection, onSelectionChange }: Props) {
         <form
           method="post"
           className="mt-10 space-y-10"
+          // Despierta la API mientras el visitante elige (plan gratuito de Render, ver api.ts).
+          onFocusCapture={() => void ensureApiAwake()}
           onSubmit={(e) => {
             e.preventDefault();
             void calculate();
@@ -140,6 +143,7 @@ export function Quoter({ point, selection, onSelectionChange }: Props) {
         </form>
 
         <div aria-live="polite" className="mt-8">
+          <ApiWakingNotice />
           {error && (
             <p className="font-semibold text-error" role="alert">
               <span aria-hidden="true">⚠ </span>

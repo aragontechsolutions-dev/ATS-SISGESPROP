@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { api, ApiError, formatUsd, type Coverage as CoverageData, type LatLng, type TravelEstimate } from '../api';
 import { content } from '../content';
+import { ApiWakingNotice } from '../components/ApiWakingNotice';
 
 const MapView = lazy(() => import('../components/MapView'));
 
@@ -74,6 +75,7 @@ export function Coverage({ point, onPointChange }: Props) {
           <p className="mt-4 text-lg text-text-secondary">{coverage.text}</p>
 
           <div className="mt-8 rounded-lg border border-border bg-surface p-5" aria-live="polite">
+            <ApiWakingNotice />
             {!point && !error && <p className="text-text-secondary">Todavía no elegiste una ubicación.</p>}
             {loading && <p>Calculando…</p>}
             {error && (

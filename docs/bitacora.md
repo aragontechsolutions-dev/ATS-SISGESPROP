@@ -450,3 +450,29 @@ emails de destino).
 
 **Pendiente con el cliente:** tipografía, logo en los emails, imagen para redes y uso de la versión
 dorada.
+
+## 2026-11-10 – El cotizador fallaba en producción: API dormida (Render gratuito)
+
+**Síntoma**
+- En `privatgp.com`, el cotizador mostró *"No pudimos completar la consulta"*.
+- El log de la API solo tenía un arranque, sin errores.
+
+**Diagnóstico**
+- Se creó un entorno de desarrollo con acceso a `api.privatgp.com` y `privatgp.com`.
+- La API no respondió durante ~6 minutos de intentos, mientras la web respondía en 0,3 s.
+- En el navegador, `/health` mostró la página de Render *"SERVICE WAKING UP"*.
+- Render avisa: *"Your free instance will spin down with inactivity… 50 seconds or more"*.
+- **Causa:** la web cortaba a los 15 s, y la página de espera llega sin CORS.
+
+**Corrección** ([ADR-017](adr/ADR-017-api-dormida-render.md))
+- `ensureApiAwake()` espera hasta 90 s, con aviso visible.
+- La API se despierta de forma anticipada (al llegar al mapa o al usar el cotizador o el formulario).
+- El panel usa la misma espera.
+- Hay un mensaje propio para un fallo de red real.
+- Postgres tiene un tiempo máximo de conexión de 10 s.
+
+**Pruebas**
+- Prueba e2e nueva que simula la API dormida.
+- Suite completa en verde: landing 13/13, panel 19/19, accesibilidad 17/17, API 88/88.
+
+**Recomendación:** plan pago de Render, para que ningún visitante tenga que esperar.

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { ensureApiAwake } from '../api';
 
 const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
@@ -17,6 +18,8 @@ export async function adminFetch(path: string, init: RequestInit = {}): Promise<
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (!token) throw new AdminApiError(401, 'La sesión expiró. Vuelve a ingresar.');
+  // La API puede estar dormida (plan gratuito de Render): se espera a que responda (api.ts).
+  await ensureApiAwake();
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     credentials: 'omit',
