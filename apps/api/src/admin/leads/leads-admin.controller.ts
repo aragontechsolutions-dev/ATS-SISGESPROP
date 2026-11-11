@@ -65,6 +65,8 @@ export class AdminLeadsController {
         email: l.email,
         phone: l.phone,
         propertyType: l.propertyType?.name ?? null,
+        residenceCountry: l.residenceCountry,
+        propertyLocation: l.propertyLocation,
         message: l.message,
         status: l.status,
         simulation: l.simulation
@@ -107,13 +109,15 @@ export class AdminLeadsController {
       audit(tx, admin.id, 'EXPORT_CSV', 'lead', q.status ?? 'TODAS', null, { rows: rows.length }),
     );
     return toCsv(
-      ['Fecha', 'Nombre', 'Email', 'Teléfono', 'Tipo de propiedad', 'Estado', 'Mensaje', 'Nivel', 'Abono baja USD', 'Abono alta USD', 'Anual USD', 'Distancia km', 'Política aceptada'],
+      ['Fecha', 'Nombre', 'Email', 'Teléfono', 'Tipo de propiedad', 'País de residencia', 'Ubicación del inmueble', 'Estado', 'Mensaje', 'Nivel', 'Abono baja USD', 'Abono alta USD', 'Anual USD', 'Distancia km', 'Política aceptada'],
       rows.map((l) => [
         l.createdAt.toISOString(),
         l.name,
         l.email,
         l.phone,
         l.propertyType?.name,
+        l.residenceCountry,
+        l.propertyLocation,
         l.status,
         l.message,
         l.simulation?.serviceLevel,

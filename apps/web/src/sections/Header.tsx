@@ -9,13 +9,15 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-primary text-text-on-dark">
-      <div className="container-page flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
+      {/* Contenedor propio, más ancho que el de las secciones (max-w-6xl = 1152 px): con 7 enlaces,
+          "Acceso clientes" y el botón de contacto el contenido no entra en 1152 px (CI, 11/11/2026). */}
+      <div className="mx-auto flex h-16 w-full max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-6">
         <a href="#inicio" className="shrink-0" aria-label={`${content.brand.name}, ir al inicio`}>
           <Logo variant="blanco" alt="" className="h-11 w-auto" />
         </a>
 
         <nav aria-label="Principal" className="hidden xl:block">
-          <ul className="flex items-center gap-6 text-sm">
+          <ul className="flex items-center gap-5 text-sm whitespace-nowrap">
             {content.nav.map((item) => (
               <li key={item.href}>
                 <a href={item.href} className="underline-offset-4 hover:text-accent hover:underline">
@@ -27,7 +29,11 @@ export function Header() {
         </nav>
 
         <div className="hidden items-center gap-3 xl:flex">
-          <ClientAccess />
+          {/* Con 7 enlaces en el menú no entra a 1280 px: "Acceso clientes" (deshabilitado, "Pronto")
+              se muestra en el encabezado desde 2xl; en pantallas menores sigue en el menú móvil. */}
+          <span className="hidden 2xl:contents">
+            <ClientAccess />
+          </span>
           <a href="#contacto" className="btn bg-background whitespace-nowrap text-primary hover:bg-surface">
             {content.hero.cta}
           </a>

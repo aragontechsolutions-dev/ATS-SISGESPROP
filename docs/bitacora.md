@@ -476,3 +476,75 @@ dorada.
 - Suite completa en verde: landing 13/13, panel 19/19, accesibilidad 17/17, API 88/88.
 
 **Recomendación:** plan pago de Render, para que ningún visitante tenga que esperar.
+
+## 2026-11-11 – Entrega del cliente: análisis (sin cambios en la web)
+
+**Recibido:** 14 documentos y 16 imágenes.
+- 5 documentos son idénticos (SHA-256) a los del 04/11.
+- Nuevos: Análisis web v1.0, FAQ, Plan Maestro v1.1, Drive v1.1, Guía y Contrato v1.1, y la
+  planilla de cobro actualizada.
+
+**Hallazgos**
+- **Web:** el cliente no aprueba todavía la versión actual. Pide 4 cambios de prioridad alta.
+- **Planilla:**
+  - la fórmula coincide con el motor;
+  - el costo por km pasa a 0,50;
+  - siguen faltando los 15 perfiles y la base de operaciones.
+- **Imágenes:** la imagen 50 tiene una credencial C2PA de Google que indica que fue generada con
+  IA. No deben presentarse como propiedades ni como equipo reales.
+- **Contradicciones a resolver:** 7, entre ellas la FAQ con "bitácora en tiempo real" frente al
+  Plan Maestro, y las cuentas bancarias separadas frente al contrato.
+
+**Resultado:** [analisis-documentos-cliente-2026-11-11.md](analisis-documentos-cliente-2026-11-11.md),
+con un plan F1/F2/F3 pendiente de aprobación.
+
+## 2026-11-11 – Etapa F1 implementada (aprobada por el usuario)
+
+**Hecho** ([ADR-018](adr/ADR-018-contenido-f1-e-imagenes.md), [ADR-019](adr/ADR-019-busqueda-direcciones-nominatim.md))
+- **Portada:** textos del cliente, lema, botones "Solicitar una propuesta" y "Calcular mi abono", y
+  foto de fondo.
+- **SEO** en español; nueva **cobertura**.
+- **Transparencia:** "Registro documental"; fondos alineados al contrato (C3).
+- **Secciones nuevas:**
+  - **Servicios complementarios**, con imágenes;
+  - **Bitácora digital**, como "próximamente" (C1/C2).
+- **FAQ del cliente:** 32 preguntas en 7 categorías.
+  - Acordeón de 2 niveles accesible, con el texto en el HTML.
+  - Editor del panel con categoría, edición y orden.
+- **Cotizador:** "Estimación preliminar · sin IVA" y botón "Solicitar propuesta personalizada".
+- **Formulario:** país de residencia y ubicación del inmueble (opcionales), en el panel y en el CSV.
+- **Botón fijo de WhatsApp:** aparece cuando se cargue el número.
+- **Imágenes:** 16 en WebP responsivo, sin metadatos, por lista cerrada.
+- **Panel:** mapa dedicado para la base, con búsqueda de direcciones (Nominatim), marcador
+  arrastrable y coordenadas.
+- **Base de datos:**
+  - migración que solo agrega columnas;
+  - seed idempotente que no pisa ediciones (probado en 3 escenarios).
+
+**Problemas encontrados y corregidos**
+- **Menú a 1280 px:** con 7 enlaces había 33 px de scroll horizontal. "Acceso clientes" (deshabilitado)
+  pasa a mostrarse desde 2xl, y se agregó una prueba de anchos.
+- **Etiquetas duplicadas:** "Latitud" y "Longitud" aparecían dos veces en la misma página del panel
+  (accesibilidad); se renombraron.
+- **Formularios anidados:** el formulario de viáticos habría quedado dentro de otro; se reorganizó.
+- **Calidad de imagen:** ImageMagick ignoraba la calidad WebP; se reemplazó por Pillow.
+- **Encabezado a 1536 px (detectado por el CI del PR #9):** el contenido del encabezado (7 enlaces,
+  "Acceso clientes" y el botón de contacto) medía 1268 px y no entraba en el contenedor de 1152 px
+  (`max-w-6xl`). En local no generaba scroll porque aún cabía en la pantalla; con las fuentes del CI
+  (unos 80 px más anchas) desbordó 5 px.
+  - Corrección: el encabezado usa un contenedor propio de hasta 1536 px (`max-w-[96rem]`); quedan unos
+    245 px de espacio libre a 1280 y a 1536 px.
+  - Prueba: además del scroll de la página, ahora se verifica que el contenido del encabezado entre en
+    su contenedor a cada ancho. Lección: medir el desborde del elemento, no solo el de la página,
+    porque depende de las fuentes de cada equipo.
+
+**Pruebas**
+- API: 91/91.
+- e2e en limpio: landing 16, panel 19 y accesibilidad 19, todas en verde.
+- Lighthouse: móvil 99/100/100 (SEO 69 por el `noindex` provisorio) y escritorio 100/100/100.
+- **Pendiente F2 (datos del cliente):**
+  - base de operaciones y perfiles;
+  - confirmar 0,50 USD/km;
+  - nombre del nivel 3;
+  - WhatsApp, privacidad y equipo;
+  - testimonios.

@@ -18,7 +18,42 @@ const s = (max: number, min = 1): Field => ({ kind: 'string', max, min });
 const ns = (max: number): Field => ({ kind: 'nullableString', max });
 
 /** Anclas válidas del menú (secciones de la landing). */
-export const NAV_ANCHORS = ['#servicios', '#transparencia', '#cobertura', '#cotizador', '#contacto', '#preguntas'] as const;
+export const NAV_ANCHORS = [
+  '#servicios',
+  '#complementarios',
+  '#bitacora',
+  '#transparencia',
+  '#cobertura',
+  '#cotizador',
+  '#preguntas',
+  '#contacto',
+] as const;
+
+/**
+ * Imágenes incluidas en la web (apps/web/public/img, ver docs/marca.md). El panel elige una clave
+ * de esta lista cerrada: nunca una URL libre (sin contenido externo ni cambios de CSP). Son
+ * imágenes ilustrativas entregadas por el cliente (al menos una generada con IA): no representan
+ * propiedades administradas ni al equipo de PRIVAT.
+ */
+export const IMAGE_KEYS = [
+  'casa-piscina-jardin',
+  'casa-colinas',
+  'galeria-laguna',
+  'living-hogar',
+  'cocina-parrillero',
+  'casa-hormigon-madera',
+  'casa-bosque',
+  'penthouse-terraza',
+  'casa-piedra-campo',
+  'casa-frente-mar',
+  'oficina-administracion',
+  'inspeccion-cocina',
+  'inspeccion-exterior-piedra',
+  'inspeccion-exterior-tablet',
+  'inspeccion-azotea',
+  'inspeccion-tablero',
+] as const;
+const image: Field = { kind: 'enum', values: ['ninguna', ...IMAGE_KEYS] };
 
 export const CONTENT_SECTIONS = {
   settings: {
@@ -31,8 +66,32 @@ export const CONTENT_SECTIONS = {
   nav: {
     items: { kind: 'objectArray', maxItems: 8, fields: { label: s(30), href: { kind: 'enum', values: NAV_ANCHORS } } },
   },
-  hero: { title: s(140), subtitle: s(320), cta: s(40), badges: { kind: 'stringArray', maxItems: 4, max: 80 } },
+  hero: {
+    title: s(140),
+    subtitle: s(320),
+    complement: s(400),
+    cta: s(40),
+    secondaryCta: s(40),
+    slogan: ns(80),
+    badges: { kind: 'stringArray', maxItems: 4, max: 80 },
+    image,
+  },
   services: { eyebrow: s(40), title: s(140), intro: s(320) },
+  complementary: {
+    eyebrow: s(40),
+    title: s(140),
+    intro: s(320),
+    items: { kind: 'objectArray', maxItems: 8, fields: { title: s(60), text: s(300), image } },
+    note: ns(200),
+  },
+  bitacora: {
+    eyebrow: s(40),
+    title: s(140),
+    text: s(600),
+    items: { kind: 'objectArray', maxItems: 6, fields: { title: s(60), text: s(300) } },
+    note: ns(240),
+    image,
+  },
   transparency: {
     eyebrow: s(40),
     title: s(140),
@@ -40,6 +99,14 @@ export const CONTENT_SECTIONS = {
   },
   coverage: { eyebrow: s(40), title: s(140), text: s(320), viaticoNote: s(320) },
   quoter: { eyebrow: s(40), title: s(140), intro: s(320), disclaimer: s(200), cta: s(80) },
+  faqsection: {
+    eyebrow: s(40),
+    title: s(140),
+    intro: s(320),
+    closingTitle: s(80),
+    closingText: s(400),
+    closingCta: s(40),
+  },
   contact: {
     eyebrow: s(40),
     title: s(140),

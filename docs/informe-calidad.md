@@ -14,6 +14,18 @@ Medido con el contenido publicado y `provisional: false` (como quedará en produ
 | Escritorio | **100** | **100** | **100** | **100** | **0,2 s** | 0 |
 
 - **Objetivos del plan:** ≥ 90 en las cuatro categorías; LCP < 2,5 s en móvil y 1,5 s en escritorio. ✅
+- **Remedición en la Etapa F1 (11/11/2026)**, con la foto de portada y las secciones nuevas, todavía con
+  contenido provisorio:
+
+  | Perfil | Rendimiento | Accesibilidad | Buenas prácticas | SEO | LCP |
+  |---|---|---|---|---|---|
+  | Móvil | 99 | 100 | 100 | 69 | 2,1 s |
+  | Escritorio | 100 | 100 | 100 | 69 | 0,6 s |
+
+  - El SEO en 69 es el `noindex` del contenido provisorio.
+  - La foto de portada pasa a ser el LCP (antes, 0,8 s sin foto). Se le sirve una versión de
+    calidad 40, porque va bajo una capa verde al 85 %.
+  - Sigue dentro del objetivo (< 2,5 s), con poco margen: conviene volver a medir en producción.
 - **Con contenido provisorio**, el SEO da 66: es el `noindex` puesto a propósito para que Google no
   indexe textos no aprobados. Desaparece al desmarcar "contenido provisorio" en el panel.
 - **Corrección hecha:** los números dorados de Transparencia no tenían contraste suficiente

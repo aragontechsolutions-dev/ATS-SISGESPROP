@@ -54,7 +54,7 @@ try {
     const res = await page.goto(WEB_URL, { waitUntil: 'domcontentloaded' });
     assert.equal(res.status(), 200);
     const html = await res.text();
-    assert.match(html, /<h1[^>]*>Gestión patrimonial inteligente/);
+    assert.match(html, /<h1[^>]*>Gestión integral y conservación patrimonial/);
     await page.getByRole('heading', { level: 1 }).waitFor();
   });
 
@@ -69,13 +69,68 @@ try {
     await page.locator('header').getByRole('link', { name: /PRIVAT/ }).waitFor();
   });
 
+  await step('portada y secciones nuevas (Análisis web del cliente, 11/11/2026)', async () => {
+    await page.getByRole('heading', { level: 1, name: 'Gestión integral y conservación patrimonial de propiedades en Uruguay' }).waitFor();
+    await page.locator('#inicio').getByRole('link', { name: 'Solicitar una propuesta' }).waitFor();
+    await page.locator('#inicio').getByRole('link', { name: 'Calcular mi abono' }).waitFor();
+    await page.getByText('Tu propiedad, nuestro compromiso.').first().waitFor();
+    await page.getByRole('heading', { level: 2, name: 'Prestaciones que se suman a cualquier nivel' }).waitFor();
+    await page.getByRole('heading', { level: 2, name: /Cada propiedad tiene su propio historial/ }).waitFor();
+    await page.getByRole('heading', { level: 3, name: 'Registro documental' }).waitFor();
+    const body = await page.locator('body').innerText();
+    // Contradicciones C1/C3 resueltas: sin "tiempo real" ni "cuentas bancarias separadas".
+    assert.ok(!/tiempo real/i.test(body), 'promete "tiempo real"');
+    assert.ok(!/cuentas bancarias separadas/i.test(body), 'promete "cuentas bancarias separadas"');
+  });
+
+  await step('preguntas frecuentes: acordeón de dos niveles accesible y con el texto en el HTML', async () => {
+    const faq = page.getByTestId('faq');
+    const cat = faq.getByRole('button', { name: 'Costos y contratación' });
+    assert.equal(await cat.getAttribute('aria-expanded'), 'false');
+    // El texto está en el HTML aunque esté cerrado (buscadores), pero oculto.
+    const panelId = await cat.getAttribute('aria-controls');
+    assert.match(await page.locator(`#${panelId}`).innerHTML(), /plazo mínimo/);
+    assert.equal(await page.locator(`#${panelId}`).isVisible(), false);
+    await cat.focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await cat.getAttribute('aria-expanded'), 'true');
+    const q = faq.getByRole('button', { name: '¿Existe un plazo mínimo de contratación?' });
+    await q.click();
+    assert.equal(await q.getAttribute('aria-expanded'), 'true');
+    await page.getByText('PRIVAT no establece un plazo mínimo de contratación.').waitFor();
+    await q.click();
+    assert.equal(await q.getAttribute('aria-expanded'), 'false');
+    await cat.click();
+    assert.equal(await cat.getAttribute('aria-expanded'), 'false');
+    assert.equal(await faq.getByRole('button').count(), 7, 'cerradas, solo se ven las 7 categorías');
+  });
+
   await step('banner de contenido provisorio y "Acceso clientes" deshabilitado', async () => {
     await page.getByText('Contenido provisorio').waitFor();
+    // En el encabezado se muestra desde 2xl (1536 px): con 7 enlaces no entra a 1280 px.
+    await page.setViewportSize({ width: 1600, height: 900 });
     const access = page.locator('header [aria-disabled="true"]').first();
     await access.waitFor();
     assert.match(await access.innerText(), /Acceso clientes\s*Pronto/);
     const box = await access.boundingBox();
     assert.ok(box.height < 56, `el botón ocupa más de una línea (${box.height}px)`);
+    await page.setViewportSize({ width: 1366, height: 900 });
+  });
+
+  await step('sin scroll horizontal en anchos de escritorio (1024 a 1920 px)', async () => {
+    for (const width of [1024, 1280, 1366, 1440, 1536, 1920]) {
+      await page.setViewportSize({ width, height: 900 });
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      assert.ok(overflow <= 0, `scroll horizontal de ${overflow}px a ${width}px`);
+      // El contenido del encabezado debe entrar en SU contenedor (no solo en la pantalla): un
+      // desborde oculto depende de las fuentes del sistema y aparece en otros equipos.
+      const header = await page.evaluate(() => {
+        const row = document.querySelector('header > div');
+        return { free: row.clientWidth - row.scrollWidth, right: Math.max(...[...row.children].map((c) => c.getBoundingClientRect().right)), limit: row.getBoundingClientRect().right };
+      });
+      assert.ok(header.free >= 0 && header.right <= header.limit + 0.5, `el encabezado no entra en su contenedor a ${width}px`);
+    }
+    await page.setViewportSize({ width: 1366, height: 900 });
   });
 
   if (SHOTS_DIR) await page.screenshot({ path: `${SHOTS_DIR}/landing-escritorio.png` });
@@ -129,7 +184,9 @@ try {
     const shown = await result.innerText();
     const fmt = (v) => new Intl.NumberFormat('es-UY', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(Number(v));
     for (const key of ['lowFee', 'highFee', 'annualFee']) assert.ok(shown.includes(fmt(body[key])), `no se muestra ${key}`);
-    assert.match(shown, /Estimación orientativa sujeta a auditoría inicial/);
+    assert.match(shown, /Estimación preliminar/);
+    assert.match(shown, /sin IVA/);
+    await result.getByRole('link', { name: 'Solicitar propuesta personalizada' }).waitFor();
     // La respuesta pública no trae datos comerciales sensibles.
     assert.ok(!('hourlyRate' in body) && !('premiumPct' in body));
   });
@@ -148,6 +205,8 @@ try {
     await page.getByLabel('Nombre y apellido').fill('Prueba E2E');
     await page.getByTestId('turnstile').waitFor();
     await page.getByLabel('Email').fill('e2e@example.com');
+    await page.getByLabel('País de residencia (opcional)').fill('Argentina');
+    await page.getByLabel('Ubicación del inmueble (opcional)').fill('José Ignacio');
     await page.getByLabel(/Acepto que mis datos/).check();
     await page.waitForTimeout(100);
     const lead = page.waitForResponse((r) => r.url().endsWith('/public/leads'));

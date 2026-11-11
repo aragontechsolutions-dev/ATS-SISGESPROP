@@ -90,3 +90,11 @@
 @utility label {
   @apply mb-1.5 block text-sm font-semibold text-text-primary;
 }
+
+/* Marcador de la base de operaciones en el mapa del panel (Leaflet divIcon, sin imágenes externas). */
+.base-marker {
+  border-radius: 9999px;
+  background: var(--color-primary);
+  border: 3px solid var(--color-accent);
+  box-shadow: 0 0 0 2px #ffffff;
+}

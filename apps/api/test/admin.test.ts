@@ -89,13 +89,29 @@ describe('API del panel', { skip }, () => {
 
   describe('contenidos', () => {
     it('guarda una sección válida y la audita con antes/después', async () => {
-      const value = { title: 'Nuevo titular', subtitle: 'Subtítulo', cta: 'Contactar', badges: ['Uno'] };
+      const value = {
+        title: 'Nuevo titular',
+        subtitle: 'Subtítulo',
+        complement: 'Texto complementario',
+        cta: 'Contactar',
+        secondaryCta: 'Calcular mi abono',
+        slogan: null,
+        badges: ['Uno'],
+        image: 'casa-frente-mar',
+      };
       const res = await call('PUT', '/admin/content/sections/hero', { value });
       assert.equal(res.status, 200);
       const log = await ctx.prisma.auditLog.findFirstOrThrow({ where: { entity: 'content_block', entityId: 'hero' }, orderBy: { id: 'desc' } });
       assert.equal(log.actorId, adminId);
       assert.equal(log.action, 'UPDATE');
       assert.deepEqual(log.afterData, value);
+    });
+
+    it('solo acepta imágenes de la lista cerrada (nunca una URL)', async () => {
+      const base = { title: 'T', subtitle: 'S', complement: 'C', cta: 'A', secondaryCta: 'B', slogan: null, badges: [] };
+      assert.equal((await call('PUT', '/admin/content/sections/hero', { value: { ...base, image: 'https://evil.example/x.png' } })).status, 400);
+      assert.equal((await call('PUT', '/admin/content/sections/hero', { value: { ...base, image: '../../etc/passwd' } })).status, 400);
+      assert.equal((await call('PUT', '/admin/content/sections/hero', { value: { ...base, image: 'ninguna' } })).status, 200);
     });
 
     it('rechaza secciones inexistentes, campos extra y datos inválidos', async () => {
@@ -128,13 +144,17 @@ describe('API del panel', { skip }, () => {
     });
 
     it('preguntas frecuentes: alta, edición, baja y auditoría', async () => {
-      const created = await json(await call('POST', '/admin/content/faq', { question: '¿Trabajan en Rocha?', answer: 'Sí, en todo Uruguay.', sortOrder: 1, visible: true }));
+      const created = await json(await call('POST', '/admin/content/faq', { category: 'Cobertura', question: '¿Trabajan en Rocha?', answer: 'Sí, en todo Uruguay.', sortOrder: 1, visible: true }));
+      assert.equal(created.category, 'Cobertura');
       assert.ok(created.id);
-      assert.equal((await call('PUT', `/admin/content/faq/${created.id}`, { question: '¿Y en Colonia?', answer: 'También.', sortOrder: 2, visible: false })).status, 200);
+      assert.equal((await call('PUT', `/admin/content/faq/${created.id}`, { category: 'Cobertura', question: '¿Y en Colonia?', answer: 'También.', sortOrder: 2, visible: false })).status, 200);
       assert.equal((await call('DELETE', `/admin/content/faq/${created.id}`)).status, 204);
       const actions = (await ctx.prisma.auditLog.findMany({ where: { entity: 'faq', entityId: created.id }, orderBy: { id: 'asc' } })).map((a) => a.action);
       assert.deepEqual(actions, ['CREATE', 'UPDATE', 'DELETE']);
-      assert.equal((await call('POST', '/admin/content/faq', { question: 'x', answer: 'y', sortOrder: 1, visible: true })).status, 400);
+      assert.equal((await call('POST', '/admin/content/faq', { category: 'General', question: 'x', answer: 'y', sortOrder: 1, visible: true })).status, 400);
+      // La categoría es obligatoria y sin caracteres de control.
+      assert.equal((await call('POST', '/admin/content/faq', { question: '¿Pregunta válida?', answer: 'Respuesta válida.', sortOrder: 1, visible: true })).status, 400);
+      assert.equal((await call('POST', '/admin/content/faq', { category: 'Mal\u0007', question: '¿Pregunta válida?', answer: 'Respuesta válida.', sortOrder: 1, visible: true })).status, 400);
     });
 
     it('testimonios: exige fecha de autorización no futura', async () => {
@@ -272,6 +292,19 @@ describe('API del panel', { skip }, () => {
       assert.ok(text.includes(`"'=HYPERLINK(""http://evil.example"",""clic"")"`));
       assert.ok(text.includes(`"'+SUM(1,2) ""comillas"""`));
       assert.equal(await ctx.prisma.auditLog.count({ where: { action: 'EXPORT_CSV' } }), exportsBefore + 1);
+    });
+
+    it('lista y exporta país de residencia y ubicación del inmueble (también neutralizados)', async () => {
+      await ctx.prisma.lead.create({
+        data: { name: 'Carla', email: 'c@b.uy', residenceCountry: '=cmd|"/c calc"!A1', propertyLocation: 'José Ignacio' },
+      });
+      const list = await json(await call('GET', '/admin/leads'));
+      const item = list.items.find((i: { name: string }) => i.name === 'Carla');
+      assert.equal(item.residenceCountry, '=cmd|"/c calc"!A1');
+      assert.equal(item.propertyLocation, 'José Ignacio');
+      const text = new TextDecoder().decode(await (await call('GET', '/admin/leads/export.csv')).arrayBuffer());
+      assert.ok(text.includes('"País de residencia","Ubicación del inmueble"'));
+      assert.ok(text.includes(`"'=cmd|""/c calc""!A1","José Ignacio"`));
     });
   });
 

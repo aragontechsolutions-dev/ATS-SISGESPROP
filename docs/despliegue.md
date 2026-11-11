@@ -482,6 +482,16 @@ Remove-Item Env:DATABASE_URL
    pueda leer el contenido publicado **falla** en lugar de publicar textos provisorios
    ([ADR-014](adr/ADR-014-contenido-publicado-en-el-build.md)).
 
+### 7.1 Después de desplegar la Etapa F1 (11/11/2026)
+
+- El build de Render aplica la migración nueva (solo agrega columnas) y el seed: secciones nuevas,
+  FAQ del cliente y textos nuevos en las secciones que **no** se editaron en el panel.
+- En el panel:
+  1. revisar **Contenidos**: portada, servicios complementarios, bitácora y FAQ;
+  2. ubicar la **base de operaciones** con el mapa nuevo (*Precios y viáticos*);
+  3. **Publicar**.
+- **WhatsApp:** cargar el número en *Contenidos → Contacto* activa el botón fijo de WhatsApp.
+
 ## 8. Verificación final (smoke test)
 
 - [ ] `https://privatgp.com` carga con candado y `https://www.privatgp.com` redirige.

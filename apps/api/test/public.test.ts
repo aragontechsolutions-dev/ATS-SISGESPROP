@@ -123,6 +123,17 @@ describe('Endpoints públicos – cobertura y consultas', { skip }, () => {
       assert.equal(notifier.notices[0]?.leadId, lead.id);
     });
 
+    it('guarda país de residencia y ubicación del inmueble (opcionales) y los valida', async () => {
+      const res = await post('/public/leads', { ...validLead, residenceCountry: ' Argentina ', propertyLocation: 'José Ignacio' });
+      assert.equal(res.status, 201);
+      const lead = await ctx.prisma.lead.findFirstOrThrow();
+      assert.equal(lead.residenceCountry, 'Argentina');
+      assert.equal(lead.propertyLocation, 'José Ignacio');
+      assert.equal((await post('/public/leads', { ...validLead, residenceCountry: 'A'.repeat(61) })).status, 400);
+      assert.equal((await post('/public/leads', { ...validLead, propertyLocation: 'Punta\u0000Ballena' })).status, 400);
+      assert.equal((await post('/public/leads', { ...validLead, propertyLocation: '<script>' })).status, 400);
+    });
+
     it('403 y nada guardado si el anti-spam falla', async () => {
       const res = await post('/public/leads', { ...validLead, turnstileToken: 'bot' });
       assert.equal(res.status, 403);

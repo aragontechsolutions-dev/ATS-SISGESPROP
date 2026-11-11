@@ -9,7 +9,7 @@ const dec = (d: { toFixed(): string }) => d.toFixed();
 export interface DraftContent {
   sections: Partial<Record<ContentSection, Record<string, unknown>>>;
   services: Array<{ level: number; name: string; description: string; items: string[] }>;
-  faq: Array<{ question: string; answer: string }>;
+  faq: Array<{ category: string; question: string; answer: string }>;
   testimonials: Array<{ author: string; text: string }>;
   propertyTypes: Array<{ code: string; name: string }>;
 }
@@ -88,7 +88,7 @@ export class DraftsService {
         description: s.description,
         items: Array.isArray(s.includedItems) ? (s.includedItems as string[]) : [],
       })),
-      faq: faq.map((f) => ({ question: f.question, answer: f.answer })),
+      faq: faq.map((f) => ({ category: f.category, question: f.question, answer: f.answer })),
       testimonials: testimonials.map((t) => ({ author: t.author, text: t.text })),
       propertyTypes: propertyTypes.map((t) => ({ code: t.code, name: t.name })),
     };

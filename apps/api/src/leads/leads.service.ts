@@ -52,6 +52,8 @@ export class LeadsService {
           propertyTypeId: propertyType?.id ?? null,
           simulationId: simulationId ?? null,
           message: dto.message?.trim() || null,
+          residenceCountry: dto.residenceCountry?.trim() || null,
+          propertyLocation: dto.propertyLocation?.trim() || null,
         },
         select: { id: true, createdAt: true },
       });

@@ -44,6 +44,8 @@ export function Contact({ selection }: Props) {
         name: String(data.get('name') ?? '').trim(),
         email: String(data.get('email') ?? '').trim(),
         phone: String(data.get('phone') ?? '').trim() || undefined,
+        residenceCountry: String(data.get('residenceCountry') ?? '').trim() || undefined,
+        propertyLocation: String(data.get('propertyLocation') ?? '').trim() || undefined,
         propertyTypeCode: effectiveType || undefined,
         simulationId,
         message: String(data.get('message') ?? '').trim() || undefined,
@@ -118,6 +120,15 @@ export function Contact({ selection }: Props) {
             <div>
               <label htmlFor="phone" className="label">Teléfono (opcional)</label>
               <input id="phone" name="phone" type="tel" maxLength={30} autoComplete="tel" className="field" />
+            </div>
+            <div>
+              <label htmlFor="residenceCountry" className="label">País de residencia (opcional)</label>
+              <input id="residenceCountry" name="residenceCountry" maxLength={60} autoComplete="country-name" className="field" />
+            </div>
+            <div>
+              <label htmlFor="propertyLocation" className="label">Ubicación del inmueble (opcional)</label>
+              <input id="propertyLocation" name="propertyLocation" maxLength={120} aria-describedby="propertyLocation-ayuda" className="field" />
+              <p id="propertyLocation-ayuda" className="mt-1 text-xs text-text-secondary">Localidad o zona. No hace falta la dirección exacta.</p>
             </div>
             <div className="sm:col-span-2">
               <label htmlFor="propertyType" className="label">Tipo de propiedad</label>

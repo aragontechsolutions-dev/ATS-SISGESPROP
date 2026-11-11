@@ -28,6 +28,20 @@ export class CreateLeadDto {
   message?: string;
 
   /** Debe ser exactamente true: sin consentimiento no se guarda nada. */
+  /** País de residencia (opcional). Texto libre corto, sin caracteres de control. */
+  @IsOptional()
+  @IsString()
+  @Length(2, 60)
+  @Matches(/^[^\u0000-\u001F\u007F<>]+$/, { message: 'País inválido' })
+  residenceCountry?: string;
+
+  /** Localidad o zona del inmueble (opcional). No se pide la dirección exacta (minimización). */
+  @IsOptional()
+  @IsString()
+  @Length(2, 120)
+  @Matches(/^[^\u0000-\u001F\u007F<>]+$/, { message: 'Ubicación inválida' })
+  propertyLocation?: string;
+
   @Equals(true, { message: 'Se requiere el consentimiento' })
   consent!: true;
 

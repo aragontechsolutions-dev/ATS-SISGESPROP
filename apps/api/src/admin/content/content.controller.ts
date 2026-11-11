@@ -93,7 +93,7 @@ export class AdminContentController {
   @Post('faq')
   async createFaq(@Body() dto: FaqDto, @CurrentAdmin() admin: AdminPrincipal) {
     return this.prisma.$transaction(async (tx) => {
-      const created = await tx.faq.create({ data: { ...dto, question: dto.question.trim(), answer: dto.answer.trim() } });
+      const created = await tx.faq.create({ data: { ...dto, category: dto.category.trim(), question: dto.question.trim(), answer: dto.answer.trim() } });
       await audit(tx, admin.id, 'CREATE', 'faq', created.id, null, created);
       return created;
     });
@@ -104,7 +104,7 @@ export class AdminContentController {
     return this.prisma.$transaction(async (tx) => {
       const before = await tx.faq.findUnique({ where: { id } });
       if (!before) throw new NotFoundException('Pregunta inexistente');
-      const after = await tx.faq.update({ where: { id }, data: { ...dto, question: dto.question.trim(), answer: dto.answer.trim() } });
+      const after = await tx.faq.update({ where: { id }, data: { ...dto, category: dto.category.trim(), question: dto.question.trim(), answer: dto.answer.trim() } });
       await audit(tx, admin.id, 'UPDATE', 'faq', id, before, after);
       return after;
     });
