@@ -11,6 +11,26 @@ import { PrismaService } from '../src/prisma/prisma.service.ts';
 import { CAPTCHA_VERIFIER, type CaptchaVerifier } from '../src/leads/turnstile.verifier.ts';
 import { LEAD_NOTIFIER, type LeadNotifier, type NewLeadNotice } from '../src/leads/lead-notifier.ts';
 import { DEPLOY_TRIGGER, type DeployResult, type DeployTrigger } from '../src/admin/publish/deploy-trigger.ts';
+import { MEDIA_STORE, type MediaStore } from '../src/admin/media/media-store.ts';
+
+/** Storage simulado en memoria (Supabase Storage en producción). */
+export function memoryStore(enabled = true): MediaStore & { files: Map<string, Buffer>; failPuts: boolean } {
+  const files = new Map<string, Buffer>();
+  const store = {
+    enabled,
+    publicBaseUrl: 'https://test-project.supabase.co/storage/v1/object/public/privat-media/',
+    files,
+    failPuts: false,
+    async put(path: string, data: Buffer) {
+      if (store.failPuts) throw new Error('fallo simulado');
+      files.set(path, data);
+    },
+    async remove(paths: string[]) {
+      for (const p of paths) files.delete(p);
+    },
+  };
+  return store;
+}
 
 /** Disparador de despliegue simulado: cuenta las llamadas. */
 export function recordingDeploy(result: DeployResult = 'disparado'): DeployTrigger & { calls: number } {
@@ -51,6 +71,7 @@ export function testConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     turnstileAllowedHostnames: [],
     vercelDeployHookUrl: null,
     resend: null,
+    media: { bucket: 'privat-media', secretKey: null },
     ...overrides,
   };
 }
@@ -83,6 +104,7 @@ export async function createApp(
   config = testConfig(),
   notifier: LeadNotifier = recordingNotifier(),
   deploy: DeployTrigger = recordingDeploy('no-configurado'),
+  media: MediaStore = memoryStore(),
 ) {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(APP_CONFIG)
@@ -95,6 +117,8 @@ export async function createApp(
     .useValue(notifier)
     .overrideProvider(DEPLOY_TRIGGER)
     .useValue(deploy)
+    .overrideProvider(MEDIA_STORE)
+    .useValue(media)
     .compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({ bodyParser: false, logger: false });
   configureApp(app, config);
@@ -113,6 +137,7 @@ export async function resetData(prisma: PrismaService): Promise<void> {
   // Borradores del panel (los vuelve a cargar cada prueba que los necesite).
   await prisma.$executeRaw`TRUNCATE content_block, faq, testimonial, calc_profile, travel_tier, travel_config`;
   await prisma.$executeRaw`DELETE FROM pricing_param`;
+  await prisma.$executeRaw`DELETE FROM media_asset`;
   await prisma.$executeRaw`INSERT INTO pricing_param (id, key, value) VALUES (gen_random_uuid(), 'TERRITORY_TOLERANCE_KM', 2)`;
   // admin_profile NO se borra: su historial de auditoría es inmutable (ver migración admin_disable).
 }
