@@ -18,6 +18,31 @@ export interface AppConfig {
   vercelDeployHookUrl: string | null;
   /** Aviso de consultas por email con Resend. Obligatorio en producción; null = solo log. */
   resend: { apiKey: string; from: string; to: string[]; panelUrl: string } | null;
+  /**
+   * Imágenes del panel en Supabase Storage (Etapa D4). secretKey null = subida deshabilitada
+   * (la API arranca igual; POST /admin/media responde 503).
+   */
+  media: { bucket: string; secretKey: string | null };
+}
+
+const BUCKET_RE = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/;
+
+/** Clave secreta de Supabase: nueva (sb_secret_...) o la heredada service_role (JWT). */
+function loadMedia(env: NodeJS.ProcessEnv): AppConfig['media'] {
+  const bucket = env.MEDIA_BUCKET?.trim() || 'privat-media';
+  if (!BUCKET_RE.test(bucket)) throw new Error('MEDIA_BUCKET inválido (minúsculas, números y guiones; 3 a 63 caracteres)');
+  const raw = env.SUPABASE_SECRET_KEY?.trim();
+  if (!raw) return { bucket, secretKey: null };
+  const key = required(env, 'SUPABASE_SECRET_KEY');
+  // Error común: pegar la clave pública. Nunca se incluye el valor en el mensaje.
+  if (key.startsWith('sb_publishable_')) {
+    throw new Error('SUPABASE_SECRET_KEY tiene la clave PÚBLICA (sb_publishable_...): use la clave secreta (sb_secret_...)');
+  }
+  const isJwt = /^[\w-]+\.[\w-]+\.[\w-]+$/.test(key);
+  if (!/^sb_secret_[\w-]{10,}$/.test(key) && !isJwt) {
+    throw new Error('SUPABASE_SECRET_KEY no tiene el formato de una clave secreta de Supabase (sb_secret_...)');
+  }
+  return { bucket, secretKey: key };
 }
 
 const EMAIL_RE = /^[^\s@<>"',]{1,64}@[^\s@<>"',]{1,190}\.[a-z]{2,}$/i;
@@ -148,5 +173,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     turnstileAllowedHostnames,
     vercelDeployHookUrl: hook,
     resend: loadResend(env, prod),
+    media: loadMedia(env),
   };
 }

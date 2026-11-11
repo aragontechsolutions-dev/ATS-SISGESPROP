@@ -139,8 +139,10 @@ jobs:
         run: |
           (cd apps/web && FAKE_AUTH_PORT=54321 nohup node e2e/fake-supabase-auth.mjs > /tmp/fake-auth.log 2>&1 &)
           # RATE_LIMIT_DISABLED: solo entorno de prueba (el límite se prueba en la API: 429).
+          # SUPABASE_SECRET_KEY: clave FALSA del Storage simulado (fake-supabase-auth.mjs, Etapa D4).
           (cd apps/api && NODE_ENV=development RATE_LIMIT_DISABLED=true SUPABASE_URL=http://127.0.0.1:54321 CORS_ORIGINS=http://127.0.0.1:4173 \
             IP_HASH_SECRET=ci-e2e-secret-ci-e2e-secret-ci-e2e-1234 TURNSTILE_SECRET_KEY=dummy-ci TRUST_PROXY_HOPS=0 PORT=3000 \
+            SUPABASE_SECRET_KEY=e2e.fake.key \
             nohup node dist/src/main.js > /tmp/api.log 2>&1 &)
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:3000/health && break; sleep 1; done
 

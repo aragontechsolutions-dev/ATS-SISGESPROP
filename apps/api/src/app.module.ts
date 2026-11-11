@@ -24,6 +24,8 @@ import { AdminPublishController } from './admin/publish/publish.controller.ts';
 import { DEPLOY_TRIGGER, VercelDeployTrigger } from './admin/publish/deploy-trigger.ts';
 import { AdminLeadsController } from './admin/leads/leads-admin.controller.ts';
 import { AdminAuditController } from './admin/audit.controller.ts';
+import { AdminMediaController } from './admin/media/media.controller.ts';
+import { DisabledMediaStore, MEDIA_STORE, SupabaseMediaStore } from './admin/media/media-store.ts';
 
 @Module({
   imports: [
@@ -49,6 +51,7 @@ import { AdminAuditController } from './admin/audit.controller.ts';
     AdminPublishController,
     AdminLeadsController,
     AdminAuditController,
+    AdminMediaController,
   ],
   providers: [
     { provide: APP_CONFIG, useFactory: () => loadConfig() },
@@ -72,6 +75,15 @@ import { AdminAuditController } from './admin/audit.controller.ts';
     {
       provide: DEPLOY_TRIGGER,
       useFactory: (config: AppConfig) => new VercelDeployTrigger(config.vercelDeployHookUrl),
+      inject: [APP_CONFIG],
+    },
+    {
+      // Imágenes en Supabase Storage con la clave secreta (solo servidor). Sin clave: deshabilitado.
+      provide: MEDIA_STORE,
+      useFactory: (config: AppConfig) =>
+        config.media.secretKey
+          ? new SupabaseMediaStore(config.supabaseUrl, config.media.bucket, config.media.secretKey)
+          : new DisabledMediaStore(`${config.supabaseUrl}/storage/v1/object/public/${config.media.bucket}/`),
       inject: [APP_CONFIG],
     },
     DraftsService,

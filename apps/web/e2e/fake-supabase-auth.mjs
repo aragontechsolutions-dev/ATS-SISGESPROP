@@ -5,6 +5,10 @@
 //   POST /auth/v1/factors/:id/verify           POST /auth/v1/logout
 //   POST /auth/v1/recover   POST /auth/v1/verify (type recovery)   PUT /auth/v1/user (contraseña)
 //   GET  /auth/v1/.well-known/jwks.json        (la API real verifica los tokens con esto)
+// Y Storage (Etapa D4), como @supabase/storage-js 2.118.0: subir POST /storage/v1/object/{bucket}/{ruta}
+// (x-upsert), borrar DELETE /storage/v1/object/{bucket} { prefixes }, leer GET
+// /storage/v1/object/public/{bucket}/{ruta}. Escribir exige la clave (FAKE_STORAGE_KEY) en
+// apikey y Bearer; leer es público, como un bucket público.
 // Emite JWT ES256 con aal1 (contraseña o código de recuperación "654321") y aal2 (tras el
 // código TOTP "123456"). Como Supabase Auth (internal/api/user.go), cambiar la contraseña de
 // un usuario con 2FA exige una sesión aal2.
@@ -21,6 +25,8 @@ export const TOTP_CODE = '123456';
 export const RECOVERY_CODE = '654321';
 const INITIAL_PASSWORD = USER.password;
 let recoveryRequested = false;
+const STORAGE_KEY = process.env.FAKE_STORAGE_KEY ?? 'e2e.fake.key';
+const objects = new Map(); // "bucket/ruta" -> { type, data }
 
 const { privateKey, publicKey } = await generateKeyPair('ES256');
 // kid nuevo en cada arranque (como una rotación real): la API cachea el JWKS por kid y,
@@ -47,6 +53,7 @@ function send(res, status, body) {
   });
   res.end(body === undefined ? '' : JSON.stringify(body));
 }
+const readRaw = (req) => new Promise((r) => { const parts = []; req.on('data', (c) => parts.push(c)); req.on('end', () => r(Buffer.concat(parts))); });
 const readBody = (req) => new Promise((r) => { let d = ''; req.on('data', (c) => (d += c)); req.on('end', () => r(d ? JSON.parse(d) : {})); });
 
 http
@@ -54,6 +61,32 @@ http
     const url = new URL(req.url, ORIGIN);
     const p = url.pathname;
     if (req.method === 'OPTIONS') return send(res, 204);
+    // ---- Storage ----
+    let sm = p.match(/^\/storage\/v1\/object\/public\/([a-z0-9-]+)\/(.+)$/);
+    if (req.method === 'GET' && sm) {
+      const o = objects.get(`${sm[1]}/${sm[2]}`);
+      if (!o) return send(res, 400, { statusCode: '404', error: 'not_found', message: 'Object not found' });
+      res.writeHead(200, { 'content-type': o.type, 'cache-control': o.cache ?? 'no-cache' });
+      return res.end(o.data);
+    }
+    if (p.startsWith('/storage/v1/object/')) {
+      const authorized = req.headers.apikey === STORAGE_KEY && req.headers.authorization === `Bearer ${STORAGE_KEY}`;
+      if (!authorized) return send(res, 403, { statusCode: '403', error: 'Unauthorized', message: 'new row violates row-level security policy' });
+      sm = p.match(/^\/storage\/v1\/object\/([a-z0-9-]+)\/(.+)$/);
+      if (req.method === 'POST' && sm) {
+        const key = `${sm[1]}/${sm[2]}`;
+        if (objects.has(key) && req.headers['x-upsert'] !== 'true') return send(res, 400, { statusCode: '409', error: 'Duplicate', message: 'The resource already exists' });
+        objects.set(key, { type: req.headers['content-type'], cache: req.headers['cache-control'], data: await readRaw(req) });
+        return send(res, 200, { Key: key, Id: randomUUID() });
+      }
+      sm = p.match(/^\/storage\/v1\/object\/([a-z0-9-]+)$/);
+      if (req.method === 'DELETE' && sm) {
+        const b = await readBody(req);
+        const removed = (b.prefixes ?? []).filter((x) => objects.delete(`${sm[1]}/${x}`));
+        return send(res, 200, removed.map((name) => ({ name })));
+      }
+    }
+    if (req.method === 'GET' && p === '/__test__/storage') return send(res, 200, { keys: [...objects.keys()] });
     if (req.method === 'GET' && p === '/auth/v1/.well-known/jwks.json') return send(res, 200, { keys: [jwk] });
     if (req.method === 'POST' && p === '/auth/v1/token' && url.searchParams.get('grant_type') === 'password') {
       const b = await readBody(req);

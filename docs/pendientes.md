@@ -8,7 +8,7 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 |---|---|---|
 | ★ P-2 | Dirección exacta de la base de operaciones | El cotizador responde 503 (sin base no hay viático) |
 | ★ P-3 | Regla del viático: ¿USD 0,35/km? ¿radio sin cargo? ¿tramos? Si son tramos: ¿monto por visita o por mes? | Modo por km con valores iniciales del plan (0 km de radio, 0,35 USD/km); modo por tramos bloqueado |
-| ★ P-5 | Valores de los 15 perfiles (5 tipos × 3 niveles) | Sin perfiles, el cotizador responde 404 para esa combinación |
+| ★ P-5 | Valores de los 15 perfiles (5 tipos × 3 niveles). **Plantilla para el cliente:** [`plantillas/PRIVAT_15_perfiles_cotizador.xlsx`](plantillas/PRIVAT_15_perfiles_cotizador.xlsx) (11/11/2026) | Sin perfiles, el cotizador responde 404 para esa combinación |
 | P-4 | 3 o 4 trayectos reales con km por carretera | El factor de ruta queda en 1,3 (propuesto, sin calibrar) |
 | ★ P-16 | Cuentas a nombre del cliente. **Recibidas (06/11/2026):** dominio privatgp.com, GitHub, Render, Vercel, Supabase y Resend. Repositorio `privatgestor-uy/privat` (privado), código subido. DNS en **GoDaddy**. Render en plan **gratuito** por ahora (se recomienda el pago). ~~Cloudflare (Turnstile)~~ creada. ~~Buzón de avisos~~ → `privat.gestor@gmail.com`. **Web en la cuenta de Vercel del desarrollador** de forma temporal, hasta que el cliente pase a Pro ([despliegue.md](despliegue.md), 6.1) | Desplegado en https://privatgp.com |
 
@@ -66,9 +66,13 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 
 ## Pendiente técnico del Bloque D
 
-- **D4 – Imágenes** (hero escritorio/móvil y servicios): subida con URL firmada de Supabase Storage,
-  solo JPG/PNG/WebP, tamaño máximo y sin metadatos (tabla `media_asset`, ya creada). Depende de
-  Supabase Storage (P-16) y de las fotos (P-13b).
+- ~~**D4 – Imágenes**~~ **Hecho (11/11/2026)**, [ADR-020](adr/ADR-020-imagenes-subidas-storage.md):
+  pestaña *Imágenes* del panel, validación y limpieza en la API, Supabase Storage público de solo
+  lectura. **Falta activarlo en producción:** bucket `privat-media` y `SUPABASE_SECRET_KEY` en
+  Render ([despliegue.md](despliegue.md), §7.2). Se diseñó con subida a través de la API (no URL
+  firmada desde el navegador) para poder validar y quitar los metadatos en el servidor.
+  - Limpieza futura: la columna `media_asset.variant` (y el enum `MediaVariant`) del modelo inicial no
+    se usa. Se deja para no hacer una migración de borrado en producción sin necesidad.
 - ~~**Panel contra Supabase real**~~: ingreso con 2FA verificado en producción (08/11/2026). Falta probar en real la recuperación de contraseña, después de configurar el SMTP y la plantilla ([emails.md](emails.md)).
 
 ## Dudas técnicas abiertas (NO SÉ todavía)

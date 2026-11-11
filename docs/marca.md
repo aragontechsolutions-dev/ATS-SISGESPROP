@@ -39,6 +39,11 @@ peso al JavaScript. La CSP no cambia (`img-src 'self'`).
 
 ## Imágenes del sitio (entrega del 11/11/2026)
 
+> **Desde la Etapa D4** el cliente también puede **subir sus propias fotos** desde el panel
+> (pestaña *Imágenes*). La API las convierte al mismo formato que las incluidas (WebP 480/768/1408 y
+> portada 768/1408, recorte 16:9, sin metadatos) y se guardan en Supabase Storage
+> ([ADR-020](adr/ADR-020-imagenes-subidas-storage.md)). Lo de abajo describe las 16 incluidas.
+
 - **Origen:** 16 imágenes del cliente: 10 de propiedades y 6 de servicios.
   - **Al menos una** (la casa en el bosque) **está generada con IA**: trae una credencial C2PA de
     Google, `trainedAlgorithmicMedia`.

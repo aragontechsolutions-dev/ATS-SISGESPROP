@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { adminJson, send } from '../http';
 import { emptyValue, SECTIONS, type FieldMeta } from '../fields';
+import { ImageSelect } from '../media';
 import { Alert, errorStatus, PageTitle, Panel, TextField, useLoad, type Status } from '../ui';
 
 interface ContentData {
@@ -117,6 +118,8 @@ function FieldInput({ id, field, value, onChange }: { id: string; field: FieldMe
           </select>
         </div>
       );
+    case 'image':
+      return <ImageSelect id={id} label={field.label} value={String(value ?? 'ninguna')} onChange={onChange} />;
     case 'list': {
       const list = (value as string[]) ?? [];
       return (

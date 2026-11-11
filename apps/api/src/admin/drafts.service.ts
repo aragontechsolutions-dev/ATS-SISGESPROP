@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.ts';
 import type { PricingSnapshot, PublishedProfile } from '../simulation/pricing-snapshot.ts';
-import { CONTENT_SECTIONS, type ContentSection } from './content/content-schema.ts';
+import { CONTENT_SECTIONS, mediaIdsIn, type ContentSection } from './content/content-schema.ts';
+import { MEDIA_STORE, type MediaStore } from './media/media-store.ts';
 
 /** Decimal de Prisma → texto sin notación científica (formato del snapshot). */
 const dec = (d: { toFixed(): string }) => d.toFixed();
@@ -12,6 +13,12 @@ export interface DraftContent {
   faq: Array<{ category: string; question: string; answer: string }>;
   testimonials: Array<{ author: string; text: string }>;
   propertyTypes: Array<{ code: string; name: string }>;
+  /**
+   * Imágenes subidas que usa el contenido (Etapa D4): id → texto alternativo y carpeta pública
+   * ("<base>/<id>/"; la web agrega "480.webp", "hero-1408.webp", etc.). Va en la publicación para
+   * que una versión restaurada conserve sus imágenes.
+   */
+  media: Record<string, { alt: string; baseUrl: string }>;
 }
 
 /**
@@ -20,7 +27,10 @@ export interface DraftContent {
  */
 @Injectable()
 export class DraftsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(MEDIA_STORE) private readonly store: MediaStore,
+  ) {}
 
   /** Parámetros del cotizador en borrador. null si falta la configuración de viáticos (base). */
   async buildPricing(): Promise<PricingSnapshot | null> {
@@ -80,8 +90,13 @@ export class DraftsService {
         sections[b.section as ContentSection] = b.value as Record<string, unknown>;
       }
     }
+    const ids = [...mediaIdsIn(sections)];
+    const assets = ids.length ? await this.prisma.mediaAsset.findMany({ where: { id: { in: ids } } }) : [];
+    const media: DraftContent['media'] = {};
+    for (const a of assets) media[a.id] = { alt: a.altText, baseUrl: `${this.store.publicBaseUrl}${a.storagePath}/` };
     return {
       sections,
+      media,
       services: services.map((s) => ({
         level: s.level,
         name: s.name,
@@ -92,6 +107,11 @@ export class DraftsService {
       testimonials: testimonials.map((t) => ({ author: t.author, text: t.text })),
       propertyTypes: propertyTypes.map((t) => ({ code: t.code, name: t.name })),
     };
+  }
+
+  /** Imágenes subidas que el contenido usa pero ya no existen (no se puede publicar con huecos). */
+  missingMedia(content: DraftContent): string[] {
+    return [...mediaIdsIn(content.sections)].filter((id) => !Object.hasOwn(content.media, id));
   }
 
   /** Secciones de contenido que faltan en el borrador (no se puede publicar incompleto). */

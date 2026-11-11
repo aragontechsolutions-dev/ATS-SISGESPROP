@@ -84,9 +84,10 @@ A la izquierda está la lista de secciones de la página. Elija una, cambie los 
 **Ajustes generales → "Contenido provisorio".** Mientras esté marcado, la web muestra un aviso de
 vista previa y Google no la indexa. **Desmárquelo solo cuando todos los textos estén aprobados.**
 
-**Imágenes.** Se elige de una lista de 16 imágenes incluidas en la web, o "Sin imagen". Son
-imágenes **ilustrativas**: no use textos que las presenten como propiedades que PRIVAT administra
-ni como su equipo.
+**Imágenes.** El selector muestra dos grupos: las **imágenes subidas** en la pestaña *Imágenes*
+(ver la sección 3.1) y las 16 **imágenes de la web**, o "Sin imagen". Al elegir una aparece una vista
+previa. Las imágenes de la web son **ilustrativas**: no use textos que las presenten como
+propiedades que PRIVAT administra ni como su equipo.
 
 **Preguntas frecuentes.** Están al final de la pestaña, agrupadas por **categoría**. En la web se
 muestran como acordeón: cada categoría se despliega y, dentro, cada pregunta.
@@ -102,6 +103,29 @@ fecha de esa autorización. Sin testimonios visibles, la sección no aparece.
 
 Si un dato no es válido (por ejemplo, un texto demasiado largo o un enlace que no empieza con
 `https://`), el panel muestra un mensaje explicando qué corregir.
+
+### 3.1 Pestaña "Imágenes"
+
+Para usar fotos propias en la web:
+
+1. **Subir:** elija el archivo (JPG, PNG o WebP; hasta 10 MB; al menos 960 × 540 px), escriba una
+   **descripción** de lo que se ve (la leen los lectores de pantalla y Google) y pulse **Subir
+   imagen**. Puede tardar unos segundos.
+2. La imagen se **recorta en formato horizontal** (16:9) y se le **quitan los datos ocultos**: la
+   ubicación GPS donde se sacó la foto, el modelo de la cámara, etc. Revise la miniatura: si el
+   recorte no queda bien, use una foto más horizontal.
+3. **Usarla:** vaya a *Contenidos*, elija la sección (por ejemplo *Portada*) y en **Imagen** elija la
+   foto en el grupo "Imágenes subidas". Guarde el borrador y **publique**.
+4. **Descripción:** se puede corregir en cada imagen con **Guardar descripción**.
+5. **Borrar:** **Borrar…** → **Confirmar borrado**. No se puede borrar una imagen que se usa en el
+   contenido ni una que se usó en una publicación anterior (se puede restaurar). Primero cámbiela por
+   otra.
+
+Cuidados:
+- Las imágenes son **públicas** (como toda la web). No suba fotos con datos privados visibles
+  (documentos, matrículas, personas sin autorización, interiores con objetos de valor a la vista).
+- Si la pestaña dice "La subida de imágenes todavía no está activada", falta un paso técnico del
+  despliegue (*despliegue.md*, §7.2).
 
 ---
 

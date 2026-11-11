@@ -79,7 +79,8 @@ Secretos y dónde vive cada uno:
 | `TURNSTILE_SECRET_KEY` | Render |
 | `RESEND_API_KEY` | Render |
 | `VERCEL_DEPLOY_HOOK_URL` | Render |
-| Clave `service_role` de Supabase | **En ningún lado.** El sistema no la usa |
+| `SUPABASE_SECRET_KEY` (clave secreta **dedicada** `render-storage`, Etapa D4) | **Solo Render.** La usa la API para escribir imágenes en Storage ([ADR-020](adr/ADR-020-imagenes-subidas-storage.md)). Nunca en Vercel ni en el navegador |
+| Clave `service_role` heredada y demás claves secretas de Supabase | **En ningún lado.** El sistema no las usa |
 
 ## 1. Llevar el código al repositorio de PRIVAT (desde la laptop)
 
@@ -353,6 +354,8 @@ en GoDaddy.
    | `PANEL_URL` | `https://privatgp.com/admin/` |
    | `DIRECT_URL` | Cadena del **session pooler** de Supabase (:5432). La usan las migraciones del build. Mismo usuario y contraseña que `DATABASE_URL`, así que no agrega exposición |
    | `VERCEL_DEPLOY_HOOK_URL` | Se completa en el paso 6.5 |
+   | `SUPABASE_SECRET_KEY` | Opcional: activa la subida de imágenes. Se completa en el paso 7.2 |
+   | `MEDIA_BUCKET` | Opcional. Por defecto `privat-media` (no hace falta definirla) |
 
    - **Los valores se pegan sin comillas**, ni simples ni dobles. Render los guarda tal cual. Si
      una variable obligatoria va entre comillas, la API no arranca y lo indica en el log.
@@ -491,6 +494,35 @@ Remove-Item Env:DATABASE_URL
   2. ubicar la **base de operaciones** con el mapa nuevo (*Precios y viáticos*);
   3. **Publicar**.
 - **WhatsApp:** cargar el número en *Contenidos → Contacto* activa el botón fijo de WhatsApp.
+
+### 7.2 Activar la subida de imágenes (Etapa D4)
+
+Hasta completar estos pasos, la pestaña **Imágenes** del panel muestra "La subida de imágenes
+todavía no está activada" y la web sigue con las imágenes incluidas. Detalle técnico y riesgos en
+[ADR-020](adr/ADR-020-imagenes-subidas-storage.md).
+
+1. **Supabase → Storage → New bucket**:
+   - nombre: `privat-media` (exacto);
+   - **Public bucket: activado** (las imágenes de la web son públicas);
+   - si el formulario lo ofrece: tamaño máximo por archivo `2 MB` y tipos permitidos `image/webp`
+     (defensa adicional: la API solo sube WebP de menos de 1 MB);
+   - **no crear políticas** (*Policies*) para el bucket. Sin políticas, solo la clave secreta puede
+     escribir; cualquiera puede ver una imagen si conoce su dirección, pero no listarlas.
+2. **Supabase → Project Settings → API Keys → Secret keys → crear una clave nueva** llamada
+   `render-storage`. Copiarla (empieza con `sb_secret_`). **No usar la clave pública**
+   (`sb_publishable_…`): la API la rechaza.
+3. **Render → servicio de la API → Environment**: agregar `SUPABASE_SECRET_KEY` con esa clave, **sin
+   comillas**, y guardar. Render redespliega.
+4. **Verificar** en el panel → **Imágenes**: subir una foto de prueba con su descripción. Debe
+   aparecer la miniatura. Si aparece "No se pudo guardar la imagen", revisar el log de Render: la
+   API registra solo el código HTTP que respondió Storage ("Storage respondió HTTP …"), nunca la
+   clave. Las causas más probables son el nombre del bucket, que no sea público o la clave
+   equivocada; con ese código se diagnostica.
+5. Para **revocar** el acceso: borrar la clave `render-storage` en Supabase. La web sigue
+   funcionando; solo se desactiva la subida.
+
+Los nombres de los menús de Supabase son los que conocemos a la fecha. Si alguno no coincide, el
+paso equivalente está en la sección *Storage* y en *API Keys* del proyecto.
 
 ## 8. Verificación final (smoke test)
 

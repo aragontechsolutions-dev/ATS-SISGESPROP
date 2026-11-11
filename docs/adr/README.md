@@ -23,3 +23,4 @@ Cada decisión técnica relevante se registra con su contexto, la decisión y su
 | [ADR-017](ADR-017-api-dormida-render.md) | La web espera a que la API despierte (Render gratuito) | Aceptada |
 | [ADR-018](ADR-018-contenido-f1-e-imagenes.md) | Etapa F1: secciones nuevas, migración de textos sin pisar ediciones, imágenes por lista cerrada | Aceptada |
 | [ADR-019](ADR-019-busqueda-direcciones-nominatim.md) | Mapa de la base con búsqueda de direcciones (Nominatim) | Aceptada |
+| [ADR-020](ADR-020-imagenes-subidas-storage.md) | Imágenes subidas desde el panel: validación y limpieza en la API, Storage público de solo lectura | Aceptada |

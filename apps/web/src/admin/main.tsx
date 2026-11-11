@@ -4,11 +4,13 @@ import '../styles.css';
 import { AuthGate } from './AuthGate';
 import { ContentPage } from './pages/ContentPage';
 import { PricingPage } from './pages/PricingPage';
+import { MediaPage } from './pages/MediaPage';
 import { AuditPage, LeadsPage, PublishPage } from './pages/OtherPages';
 import { Logo } from '../components/Logo';
 
 const TABS = [
   { id: 'contenidos', label: 'Contenidos', Page: ContentPage },
+  { id: 'imagenes', label: 'Imágenes', Page: MediaPage },
   { id: 'precios', label: 'Precios y viáticos', Page: PricingPage },
   { id: 'consultas', label: 'Consultas', Page: LeadsPage },
   { id: 'publicar', label: 'Publicar', Page: PublishPage },
