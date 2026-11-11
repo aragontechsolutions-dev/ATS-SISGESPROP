@@ -97,8 +97,10 @@ try {
   await step('base de operaciones: buscar dirección, rechazar fuera de Uruguay, coordenadas, clic y guardar', async () => {
     // Nominatim simulado: la prueba no depende de un servicio externo.
     const searches = [];
-    await page.route('https://nominatim.openstreetmap.org/**', (route) => {
+    const referers = [];
+    await page.route('https://nominatim.openstreetmap.org/**', async (route) => {
       searches.push(new URL(route.request().url()));
+      referers.push((await route.request().allHeaders()).referer);
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -118,6 +120,12 @@ try {
     await page.getByRole('button', { name: /Rambla Claudio Williman/ }).click();
     await page.getByText('Ubicación: -34.96060, -54.94890').waitFor();
     assert.equal(searches[0].searchParams.get('countrycodes'), 'uy');
+    // OpenStreetMap exige Referer (sin él: 403 "Access blocked"). Solo el origen, nunca la ruta del panel;
+    // el documento del panel sigue con no-referrer.
+    assert.equal(referers[0], `${new URL(page.url()).origin}/`, 'Nominatim debe recibir solo el origen como Referer');
+    assert.equal(await page.locator('meta[name="referrer"]').getAttribute('content'), 'no-referrer');
+    const tilePolicies = await map.locator('img.leaflet-tile').evaluateAll((imgs) => [...new Set(imgs.map((i) => i.referrerPolicy))]);
+    assert.deepEqual(tilePolicies, ['strict-origin'], 'las teselas deben enviar solo el origen como Referer');
     await map.locator('.base-marker').waitFor();
     await page.getByLabel('Latitud de la base').fill('-34.95');
     await page.getByLabel('Longitud de la base').fill('-54.93');

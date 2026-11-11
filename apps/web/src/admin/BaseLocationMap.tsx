@@ -14,12 +14,17 @@ import uruguay from '@ats/pricing/uruguay.geometry.json';
  * - Clic en el mapa o arrastrar el marcador para ajustar.
  * - Coordenadas manuales: precisión y alternativa de teclado al mapa.
  * - Se valida "dentro de Uruguay" aquí para responder al instante; el servidor vuelve a validar.
+ * - Referer: el panel usa `no-referrer` en todo el documento (admin/index.html), pero los servidores
+ *   de OpenStreetMap (teselas y Nominatim) exigen un Referer y responden 403 "Access blocked" sin él.
+ *   Solo estas peticiones usan `strict-origin`: envían únicamente el origen (https://privatgp.com/),
+ *   nunca la ruta ni el fragmento, y nada si la conexión baja de HTTPS a HTTP.
  */
 const GEOMETRY = uruguay.geometry as GeoGeometry;
 const TOLERANCE_KM = 2;
 /** Sin base guardada: zona prioritaria del Plan Maestro (Maldonado / Punta del Este). */
 const DEFAULT_CENTER: L.LatLngExpression = [-34.9, -54.95];
 const SEARCH_COOLDOWN_MS = 1500;
+const OSM_REFERRER_POLICY = 'strict-origin' as const;
 export const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 
 export interface BasePoint {
@@ -79,6 +84,7 @@ export default function BaseLocationMap({
     });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
+      referrerPolicy: OSM_REFERRER_POLICY,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
     map.on('click', (e: L.LeafletMouseEvent) => void apply.current({ lat: e.latlng.lat, lng: e.latlng.lng }));
@@ -127,7 +133,7 @@ export default function BaseLocationMap({
     setResults(null);
     try {
       const url = `${NOMINATIM_URL}?${new URLSearchParams({ format: 'jsonv2', countrycodes: 'uy', limit: '5', 'accept-language': 'es', q })}`;
-      const res = await fetch(url, { credentials: 'omit', signal: AbortSignal.timeout(10_000) });
+      const res = await fetch(url, { credentials: 'omit', referrerPolicy: OSM_REFERRER_POLICY, signal: AbortSignal.timeout(10_000) });
       if (!res.ok) throw new Error(String(res.status));
       const data = (await res.json()) as Array<{ display_name?: unknown; lat?: unknown; lon?: unknown }>;
       // Solo se usan tres campos, validados; el resto de la respuesta se descarta.

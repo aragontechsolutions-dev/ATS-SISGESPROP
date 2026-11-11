@@ -537,6 +537,12 @@ con un plan F1/F2/F3 pendiente de aprobación.
   - Prueba: además del scroll de la página, ahora se verifica que el contenido del encabezado entre en
     su contenedor a cada ancho. Lección: medir el desborde del elemento, no solo el de la página,
     porque depende de las fuentes de cada equipo.
+- **Mapa de la base en blanco en producción ("Access blocked", 403 de OpenStreetMap):** el panel
+  declara `no-referrer` y OSM exige un Referer en teselas y Nominatim. Solo esas peticiones pasan a
+  `strict-origin` (envían únicamente `https://privatgp.com/`); el resto del panel sigue sin Referer.
+  El e2e ahora lo verifica ([ADR-019](adr/ADR-019-busqueda-direcciones-nominatim.md)). Lección: un
+  mapa gris en el entorno de pruebas no prueba que funcione en producción; hay que verificar las
+  cabeceras que exige el servicio externo.
 
 **Pruebas**
 - API: 91/91.
