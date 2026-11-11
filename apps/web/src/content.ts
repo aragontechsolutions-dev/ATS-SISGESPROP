@@ -13,7 +13,7 @@
  *  - Sello "Seguro de Responsabilidad Civil": oculto hasta tener la póliza (P-15).
  */
 
-import type { ImageKey } from './images';
+import type { ImageKey, MediaRef } from './images';
 
 export interface PropertyTypeOption {
   code: string;
@@ -28,8 +28,8 @@ export interface ServiceLevelContent {
   items: string[];
 }
 
-/** Clave de imagen elegida en el panel ('ninguna' = sin imagen). */
-export type ImageChoice = ImageKey | 'ninguna';
+/** Imagen elegida en el panel: 'ninguna', una fija o una subida ("media:<uuid>", Etapa D4). */
+export type ImageChoice = ImageKey | 'ninguna' | `media:${string}`;
 
 export interface FaqItem {
   category: string;
@@ -39,6 +39,8 @@ export interface FaqItem {
 
 export interface SiteContent {
   provisional: boolean;
+  /** Imágenes subidas que usa la publicación (id → texto alternativo y carpeta pública). */
+  media: Record<string, MediaRef>;
   brand: { name: string };
   seo: { title: string; description: string };
   nav: Array<{ label: string; href: string }>;
@@ -107,6 +109,7 @@ const BASE_PROPERTY_TYPES: PropertyTypeOption[] = [
 
 const FALLBACK_CONTENT: SiteContent = {
   provisional: true,
+  media: {},
   /** Nombre confirmado por el cliente (P-1). Logo y dominio: pendientes. */
   brand: { name: 'PRIVAT' },
   seo: {
@@ -505,6 +508,8 @@ interface PublishedContent {
   faq: Array<{ category?: string; question: string; answer: string }>;
   testimonials: SiteContent['testimonials'];
   propertyTypes: Array<{ code: string; name: string }>;
+  /** Publicaciones anteriores a la Etapa D4 no traen imágenes subidas. */
+  media?: Record<string, MediaRef>;
 }
 
 const generated = import.meta.glob<{ content: PublishedContent }>('./generated/published-content.json', {
@@ -517,6 +522,7 @@ function fromPublished(p: PublishedContent): SiteContent {
   const s = p.sections;
   return {
     provisional: s.settings.provisional,
+    media: p.media && typeof p.media === 'object' ? p.media : {},
     clientAccess: s.settings.clientAccess,
     privacyPolicyVersion: s.settings.privacyPolicyVersion,
     brand: s.brand,

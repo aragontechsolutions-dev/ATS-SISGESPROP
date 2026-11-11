@@ -56,3 +56,40 @@ export const LEVEL_IMAGE: Record<1 | 2 | 3, ImageKey> = {
 export function isImageKey(v: string): v is ImageKey {
   return (IMAGE_KEYS as readonly string[]).includes(v);
 }
+
+/**
+ * Imagen subida desde el panel (Etapa D4): la publicación trae su texto alternativo y la carpeta
+ * pública en Supabase Storage. Se acepta SOLO una carpeta con la forma exacta del Storage del
+ * proyecto (VITE_SUPABASE_URL): una publicación manipulada no puede apuntar a otro sitio. La CSP
+ * (img-src) lo vuelve a impedir en el navegador.
+ */
+export interface MediaRef {
+  alt: string;
+  baseUrl: string;
+}
+
+export const MEDIA_KEY_RE = /^media:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/;
+
+const SUPABASE_ORIGIN = (() => {
+  try {
+    return import.meta.env.VITE_SUPABASE_URL ? new URL(import.meta.env.VITE_SUPABASE_URL).origin : null;
+  } catch {
+    return null;
+  }
+})();
+
+export function isSafeMediaBase(baseUrl: string, id: string): boolean {
+  if (!SUPABASE_ORIGIN) return false;
+  const prefix = `${SUPABASE_ORIGIN}/storage/v1/object/public/`;
+  if (!baseUrl.startsWith(prefix)) return false;
+  return new RegExp(`^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]/${id}/$`).test(baseUrl.slice(prefix.length));
+}
+
+/** Imagen subida lista para mostrar, o null si la clave no es de una imagen subida válida. */
+export function resolveMedia(choice: string, media: Record<string, MediaRef>): MediaRef | null {
+  const m = MEDIA_KEY_RE.exec(choice);
+  if (!m) return null;
+  const ref = Object.hasOwn(media, m[1]!) ? media[m[1]!] : undefined;
+  if (!ref || typeof ref.alt !== 'string' || typeof ref.baseUrl !== 'string' || !isSafeMediaBase(ref.baseUrl, m[1]!)) return null;
+  return ref;
+}

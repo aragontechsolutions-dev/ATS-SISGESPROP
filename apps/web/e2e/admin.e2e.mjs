@@ -12,6 +12,9 @@ const API_URL = process.env.API_URL ?? 'http://127.0.0.1:3000';
 const FAKE_AUTH_URL = process.env.FAKE_AUTH_URL ?? 'http://127.0.0.1:54321';
 const SHOTS_DIR = process.env.SHOTS_DIR;
 const USER = { email: 'e2e@test.local', password: 'Clave-de-prueba-1' };
+// Imagen real de la web (1408 × 768) como archivo a subir en la prueba de "Imágenes".
+const UPLOAD_IMAGE = new URL('../public/img/casa-frente-mar-1408.webp', import.meta.url);
+let uploadedId = null;
 
 const results = [];
 async function step(name, fn) {
@@ -84,6 +87,44 @@ try {
   });
 
   if (SHOTS_DIR) await page.screenshot({ path: `${SHOTS_DIR}/admin-contenidos.png` });
+
+  await step('imágenes: subir (sin metadatos, 5 tamaños), rechazar un archivo falso y usarla en la portada', async () => {
+    const { readFile } = await import('node:fs/promises');
+    await page.getByRole('button', { name: 'Imágenes' }).click();
+    await page.getByRole('heading', { name: 'Imágenes', level: 1 }).waitFor();
+    // Archivo falso: texto con extensión .jpg y tipo image/jpeg. El navegador lo deja pasar; la API lo rechaza.
+    await page.getByLabel(/Archivo \(JPG/).setInputFiles({ name: 'foto.jpg', mimeType: 'image/jpeg', buffer: Buffer.from('<svg><script>alert(1)</script></svg>') });
+    await page.getByLabel('Descripción de la imagen (texto alternativo)').fill('Archivo que no es una imagen');
+    await page.getByRole('button', { name: 'Subir imagen' }).click();
+    await page.getByText('Formato no admitido: solo JPG, PNG o WebP.').waitFor();
+    // Imagen válida.
+    await page.getByLabel(/Archivo \(JPG/).setInputFiles({ name: 'casa.webp', mimeType: 'image/webp', buffer: await readFile(UPLOAD_IMAGE) });
+    await page.getByLabel('Descripción de la imagen (texto alternativo)').fill('Casa de prueba frente al mar');
+    await page.getByRole('button', { name: 'Subir imagen' }).click();
+    await page.getByText('Imagen subida. Ya puedes elegirla en Contenidos.').waitFor();
+    const thumb = page.getByRole('list', { name: 'Imágenes subidas' }).getByRole('img', { name: 'Casa de prueba frente al mar' });
+    await thumb.waitFor();
+    // La miniatura carga de verdad desde Storage (la CSP del panel lo permite).
+    await page.waitForFunction((el) => el.complete && el.naturalWidth === 480, await thumb.elementHandle());
+    uploadedId = /([0-9a-f-]{36})\/480\.webp$/.exec(await thumb.getAttribute('src'))[1];
+    const stored = (await (await fetch(`${FAKE_AUTH_URL}/__test__/storage`)).json()).keys.filter((k) => k.includes(uploadedId));
+    assert.deepEqual(stored.sort(), ['1408', '480', '768', 'hero-1408', 'hero-768'].map((n) => `privat-media/${uploadedId}/${n}.webp`).sort());
+
+    // Elegirla en la portada: la vista previa aparece y se guarda en el borrador.
+    await page.getByRole('button', { name: 'Contenidos' }).click();
+    await page.getByRole('button', { name: 'Portada (hero)' }).click();
+    const select = page.getByLabel('Imagen de fondo');
+    await select.selectOption({ label: 'Casa de prueba frente al mar' });
+    await page.getByRole('img', { name: 'Vista previa: Casa de prueba frente al mar' }).waitFor();
+    await page.getByRole('button', { name: 'Guardar borrador' }).first().click();
+    await page.getByText('Guardado en borrador.').first().waitFor();
+
+    // En uso: no se puede borrar.
+    await page.getByRole('button', { name: 'Imágenes' }).click();
+    await page.getByRole('button', { name: 'Borrar…' }).first().click();
+    await page.getByRole('button', { name: 'Confirmar borrado' }).click();
+    await page.getByText(/se usa en el contenido/).waitFor();
+  });
 
   await step('precios: configurar perfil Casa premium nivel 3', async () => {
     await page.getByRole('button', { name: 'Precios y viáticos' }).click();
@@ -165,6 +206,10 @@ try {
     assert.equal(cov.baseLabel, 'Base de prueba (centro)');
     const content = await (await fetch(`${API_URL}/public/content`)).json();
     assert.equal(content.content.sections.hero.cta, 'Solicitar diagnóstico gratuito');
+    // La publicación lleva la imagen subida con su texto alternativo y su carpeta pública.
+    assert.equal(content.content.sections.hero.image, `media:${uploadedId}`);
+    assert.equal(content.content.media[uploadedId].alt, 'Casa de prueba frente al mar');
+    assert.ok(content.content.media[uploadedId].baseUrl.startsWith(`${FAKE_AUTH_URL}/storage/v1/object/public/privat-media/`));
     await page.getByText('(vigente)').waitFor();
   });
 

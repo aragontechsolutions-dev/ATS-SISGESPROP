@@ -24,7 +24,9 @@ export async function adminFetch(path: string, init: RequestInit = {}): Promise<
     ...init,
     credentials: 'omit',
     headers: {
-      ...(init.body ? { 'content-type': 'application/json' } : {}),
+      // JSON solo si el cuerpo es texto: con FormData (subida de imágenes) el navegador arma el
+      // multipart/form-data con su separador.
+      ...(typeof init.body === 'string' ? { 'content-type': 'application/json' } : {}),
       ...(init.headers ?? {}),
       authorization: `Bearer ${token}`,
     },

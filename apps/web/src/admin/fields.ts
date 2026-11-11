@@ -1,4 +1,3 @@
-import { IMAGE_ALT, IMAGE_KEYS } from '../images';
 /**
  * Descripción de los formularios de contenido. Refleja el esquema del servidor
  * (apps/api/src/admin/content/content-schema.ts); el SERVIDOR es quien valida.
@@ -8,6 +7,8 @@ export type FieldMeta =
   | { key: string; label: string; kind: 'url' | 'email'; hint?: string }
   | { key: string; label: string; kind: 'bool' }
   | { key: string; label: string; kind: 'enum'; options: Array<{ value: string; label: string }> }
+  /** Imagen: fija de la web o subida desde "Imágenes" (selector con vista previa, Etapa D4). */
+  | { key: string; label: string; kind: 'image' }
   | { key: string; label: string; kind: 'list'; max: number; maxItems: number }
   | { key: string; label: string; kind: 'objectList'; maxItems: number; fields: FieldMeta[] };
 
@@ -26,9 +27,7 @@ const ANCHORS = [
   { value: '#preguntas', label: 'Preguntas frecuentes' },
 ];
 
-/** Imágenes incluidas en la web (misma lista que la API, IMAGE_KEYS). */
-const IMAGES = [{ value: 'ninguna', label: 'Sin imagen' }, ...IMAGE_KEYS.map((k) => ({ value: k, label: IMAGE_ALT[k] }))];
-const img = (key = 'image', label = 'Imagen'): FieldMeta => ({ key, label, kind: 'enum', options: IMAGES });
+const img = (key = 'image', label = 'Imagen'): FieldMeta => ({ key, label, kind: 'image' });
 
 export const SECTIONS: Array<{ id: string; title: string; fields: FieldMeta[] }> = [
   {
@@ -107,6 +106,8 @@ export function emptyValue(f: FieldMeta): unknown {
       return false;
     case 'enum':
       return f.options[0]?.value ?? '';
+    case 'image':
+      return 'ninguna';
     case 'list':
     case 'objectList':
       return [];

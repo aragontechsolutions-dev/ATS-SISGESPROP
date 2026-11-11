@@ -15,12 +15,15 @@ const siteUrl = (process.env.VITE_SITE_URL ?? '').replace(/\/$/, '');
 // frame-ancestors no funciona en <meta>: va como cabecera en vercel.json.
 const apiOrigin = process.env.VITE_API_URL ? new URL(process.env.VITE_API_URL).origin : null;
 if (!apiOrigin) throw new Error('VITE_API_URL es obligatoria para generar la CSP');
+// Supabase: Auth del panel e imágenes subidas desde el panel (Storage público, Etapa D4).
+const supabaseOrigin = process.env.VITE_SUPABASE_URL ? new URL(process.env.VITE_SUPABASE_URL).origin : null;
+const supabaseImg = supabaseOrigin ? ` ${supabaseOrigin}` : '';
 const csp = [
   "default-src 'self'",
   "script-src 'self' https://challenges.cloudflare.com",
   "frame-src https://challenges.cloudflare.com",
   `connect-src 'self' ${apiOrigin}`,
-  "img-src 'self' data: https://tile.openstreetmap.org",
+  `img-src 'self' data: https://tile.openstreetmap.org${supabaseImg}`,
   // Sin 'unsafe-inline': Leaflet y React aplican estilos por CSSOM (element.style), que la CSP no
   // bloquea, y la app no genera atributos style="" en el HTML (verificado con las e2e).
   "style-src 'self'",
@@ -85,14 +88,14 @@ if (siteUrl) {
 }
 
 // ---------------- Panel /admin (no se prerenderiza: solo su CSP) ----------------
-// Sin Turnstile; se conecta a la API y a Supabase Auth; img data: para el QR del 2FA.
-const supabaseOrigin = process.env.VITE_SUPABASE_URL ? new URL(process.env.VITE_SUPABASE_URL).origin : null;
+// Sin Turnstile; se conecta a la API y a Supabase Auth; img data: para el QR del 2FA y Supabase
+// para las miniaturas de las imágenes subidas.
 const adminCsp = [
   "default-src 'self'",
   "script-src 'self'",
   // nominatim: búsqueda de la dirección de la base en el mapa del panel (BaseLocationMap).
   `connect-src 'self' ${apiOrigin}${supabaseOrigin ? ` ${supabaseOrigin}` : ''} https://nominatim.openstreetmap.org`,
-  "img-src 'self' data: https://tile.openstreetmap.org",
+  `img-src 'self' data: https://tile.openstreetmap.org${supabaseImg}`,
   "style-src 'self'",
   "font-src 'self'",
   "object-src 'none'",
