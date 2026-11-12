@@ -8,7 +8,8 @@ Referencias P-x = sección 10 del *Plan de desarrollo – Etapa 1*. ★ = impres
 |---|---|---|
 | ★ P-2 | Dirección exacta de la base de operaciones | El cotizador responde 503 (sin base no hay viático) |
 | ★ P-3 | Regla del viático: ¿USD 0,35/km? ¿radio sin cargo? ¿tramos? Si son tramos: ¿monto por visita o por mes? | Modo por km con valores iniciales del plan (0 km de radio, 0,35 USD/km); modo por tramos bloqueado |
-| ★ P-5 | Valores de los 15 perfiles (5 tipos × 3 niveles). **Plantilla para el cliente:** [`plantillas/PRIVAT_15_perfiles_cotizador.xlsx`](plantillas/PRIVAT_15_perfiles_cotizador.xlsx) (11/11/2026) | Sin perfiles, el cotizador responde 404 para esa combinación |
+| ~~P-5~~ | ~~Valores de los 15 perfiles~~ → **Ya no aplica (12/11/2026):** el cliente decidió no mostrar precios en la web y se retira el cotizador ([ADR-021](adr/ADR-021-formulario-presentacion-reemplaza-cotizador.md)). La plantilla `plantillas/PRIVAT_15_perfiles_cotizador.xlsx` queda sin uso y se elimina al retirar el cotizador (G5) | — |
+| ★ P-17 | **Aprobar la maqueta del formulario de presentación** (`/formulario-vista-previa/`): las preguntas marcadas "Propuesta", las interpretaciones listadas en ADR-021 y **voseo o tuteo** para toda la web | Sin aprobación no se implementa G2–G5 |
 | P-4 | 3 o 4 trayectos reales con km por carretera | El factor de ruta queda en 1,3 (propuesto, sin calibrar) |
 | ★ P-16 | Cuentas a nombre del cliente. **Recibidas (06/11/2026):** dominio privatgp.com, GitHub, Render, Vercel, Supabase y Resend. Repositorio `privatgestor-uy/privat` (privado), código subido. DNS en **GoDaddy**. Render en plan **gratuito** por ahora (se recomienda el pago). ~~Cloudflare (Turnstile)~~ creada. ~~Buzón de avisos~~ → `privat.gestor@gmail.com`. **Web en la cuenta de Vercel del desarrollador** de forma temporal, hasta que el cliente pase a Pro ([despliegue.md](despliegue.md), 6.1) | Desplegado en https://privatgp.com |
 

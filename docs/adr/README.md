@@ -24,3 +24,4 @@ Cada decisión técnica relevante se registra con su contexto, la decisión y su
 | [ADR-018](ADR-018-contenido-f1-e-imagenes.md) | Etapa F1: secciones nuevas, migración de textos sin pisar ediciones, imágenes por lista cerrada | Aceptada |
 | [ADR-019](ADR-019-busqueda-direcciones-nominatim.md) | Mapa de la base con búsqueda de direcciones (Nominatim) | Aceptada |
 | [ADR-020](ADR-020-imagenes-subidas-storage.md) | Imágenes subidas desde el panel: validación y limpieza en la API, Storage público de solo lectura | Aceptada |
+| [ADR-021](ADR-021-formulario-presentacion-reemplaza-cotizador.md) | El formulario de presentación (EF-WEB-001) reemplaza al cotizador: sin precios en la web | Aceptada (maqueta en revisión) |

@@ -1,0 +1,27 @@
+{
+  "name": "@ats/intake",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PRIVAT – Formulario de presentación de clientes y propiedades (EF-WEB-001): preguntas, condiciones y validación compartidas por la web y la API",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  }
+}

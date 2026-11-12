@@ -110,6 +110,25 @@ const adminHtml = await readFile(adminPath, 'utf8');
 if (!adminHtml.includes('<!--app-head-->')) throw new Error('admin/index.html sin marcador <!--app-head-->');
 await writeFile(adminPath, adminHtml.replace('<!--app-head-->', `<meta http-equiv="Content-Security-Policy" content="${escapeHtml(adminCsp)}" />`));
 
+// ---------------- Vista previa del formulario (no se prerenderiza: solo su CSP) ----------------
+// Maqueta sin backend: no se conecta a nada (connect-src 'self'); ni Turnstile ni mapas.
+const previewCsp = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "connect-src 'self'",
+  "img-src 'self' data:",
+  "style-src 'self'",
+  "font-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-src 'none'",
+].join('; ');
+const previewPath = path.join(clientDir, 'formulario-vista-previa/index.html');
+const previewHtml = await readFile(previewPath, 'utf8');
+if (!previewHtml.includes('<!--app-head-->')) throw new Error('formulario-vista-previa/index.html sin marcador <!--app-head-->');
+await writeFile(previewPath, previewHtml.replace('<!--app-head-->', `<meta http-equiv="Content-Security-Policy" content="${escapeHtml(previewCsp)}" />`));
+
 // El bundle de servidor solo sirve para el build: no se publica.
 await rm(path.join(root, 'dist/server'), { recursive: true, force: true });
 console.log(`Prerender OK: ${path.relative(root, path.join(clientDir, 'index.html'))}${siteUrl ? ' + sitemap.xml' : ' (sin VITE_SITE_URL: sin sitemap ni canonical)'}`);

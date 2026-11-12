@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "cd ../.. && npm ci --include=dev --ignore-scripts",
-  "buildCommand": "cd ../.. && npm run build -w @ats/pricing && npm run build -w @ats/web",
+  "buildCommand": "cd ../.. && npm run build -w @ats/pricing && npm run build -w @ats/intake && npm run build -w @ats/web",
   "outputDirectory": "dist/client",
   "cleanUrls": true,
   "headers": [
@@ -40,6 +40,19 @@
     },
     {
       "source": "/admin/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/formulario-vista-previa/(.*)",
       "headers": [
         {
           "key": "X-Robots-Tag",
