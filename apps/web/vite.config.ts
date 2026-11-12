@@ -23,12 +23,14 @@ export default defineConfig({
   build: {
     sourcemap: false,
     target: 'es2022',
-    // Dos páginas: la landing (prerenderizada) y el panel /admin (aparte: su código
-    // nunca se descarga en la landing).
+    // Páginas: la landing (prerenderizada), el panel /admin y la vista previa del formulario
+    // (aparte: su código nunca se descarga en la landing).
     rolldownOptions: {
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
         admin: fileURLToPath(new URL('./admin/index.html', import.meta.url)),
+        // Maqueta navegable del formulario de presentación (sin enlace, sin indexar, no guarda datos).
+        intakePreview: fileURLToPath(new URL('./formulario-vista-previa/index.html', import.meta.url)),
       },
     },
   },

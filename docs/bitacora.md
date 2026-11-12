@@ -621,3 +621,37 @@ Pedido: carga masiva, miniaturas, confirmación antes de subir y arrastrar y sol
 - El botón decía "Subir 0 imágenes": ahora "Subir imágenes" (deshabilitado).
 
 **Pruebas:** e2e en limpio landing 16, panel 20, accesibilidad 22; tipos OK. La API no cambió.
+
+## 2026-11-12 – Cambio de rumbo: formulario de presentación en lugar del cotizador (G1, maqueta)
+
+El cliente entregó la especificación **EF-WEB-001 v1.0**: no mostrar precios en la web y reemplazar
+el cotizador por un formulario de 4 etapas que genera una ficha comercial
+([ADR-021](adr/ADR-021-formulario-presentacion-reemplaza-cotizador.md)).
+
+**Decisiones del usuario:**
+- retirar el cotizador por completo;
+- mapa solo de cobertura;
+- el formulario nuevo reemplaza al de contacto;
+- maqueta como vista previa dentro de la web real.
+
+**Plan:** G1 maqueta → (aprobación del cliente) → G2 API y base (Cliente/Propiedad/Solicitud) → G3
+web → G4 panel (8 estados) → G5 retiro del cotizador, seguridad, documentación.
+
+**G1 hecho:**
+- **Paquete `@ats/intake`:** 15 preguntas, condicionales, validación, prioridad sugerida y señales
+  internas. 21 pruebas.
+- **`IntakeForm`:** barra de progreso, etapas, resumen editable y mensaje final.
+- **Página `/formulario-vista-previa/`:** `noindex`, CSP propia sin conexiones y aviso "no se
+  guardan datos".
+- **Compilación:** `vercel.json` y el CI compilan el paquete nuevo.
+
+**Problemas encontrados y corregidos:**
+- **Contraste insuficiente** en la etiqueta "Propuesta" (axe).
+- **Nombre duplicado:** "Teléfono" y "Correo electrónico" eran a la vez la opción de canal y el
+  campo para escribir (confuso con lector de pantalla). Los campos pasaron a "Número de teléfono" y
+  "Dirección de correo electrónico".
+- **Barra de progreso:** usaba `style` (bloqueado por la CSP de la landing); se reemplazó por
+  segmentos con clases.
+
+**Pruebas:** e2e en limpio landing 16, panel 20, accesibilidad 22 y formulario 15 (escritorio y móvil).
+
