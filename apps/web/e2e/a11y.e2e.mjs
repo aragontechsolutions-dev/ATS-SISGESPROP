@@ -126,6 +126,26 @@ try {
     await page.waitForLoadState('networkidle');
     await audit(page, `panel: ${tab}`);
   }
+  // Imágenes (subida masiva): con imágenes en la cola (una válida y una inválida) y con la
+  // confirmación abierta. No se sube nada: se cancela.
+  {
+    const { readFile } = await import('node:fs/promises');
+    await page.getByRole('navigation', { name: 'Secciones del panel' }).getByRole('button', { name: 'Imágenes' }).click();
+    await page.getByRole('heading', { level: 1, name: 'Imágenes' }).waitFor();
+    await page.waitForLoadState('networkidle');
+    await audit(page, 'panel: Imágenes');
+    await page.locator('#media-files').setInputFiles([
+      { name: 'casa.webp', mimeType: 'image/webp', buffer: await readFile(new URL('../public/img/casa-frente-mar-1408.webp', import.meta.url)) },
+      { name: 'chica.webp', mimeType: 'image/webp', buffer: await readFile(new URL('../public/img/casa-bosque-480.webp', import.meta.url)) },
+    ]);
+    await page.getByText(/Mide 480 × 262 px/).waitFor();
+    await audit(page, 'panel: Imágenes con la cola de subida');
+    await page.getByLabel('Descripción de casa.webp').fill('Casa de prueba frente al mar');
+    await page.getByRole('button', { name: 'Subir 1 imagen' }).click();
+    await page.getByRole('dialog', { name: '¿Subir 1 imagen?' }).waitFor();
+    await audit(page, 'panel: Imágenes con la confirmación abierta');
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancelar' }).click();
+  }
   await ctx.close();
 } finally {
   await browser.close();

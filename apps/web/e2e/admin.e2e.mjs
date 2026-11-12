@@ -12,8 +12,7 @@ const API_URL = process.env.API_URL ?? 'http://127.0.0.1:3000';
 const FAKE_AUTH_URL = process.env.FAKE_AUTH_URL ?? 'http://127.0.0.1:54321';
 const SHOTS_DIR = process.env.SHOTS_DIR;
 const USER = { email: 'e2e@test.local', password: 'Clave-de-prueba-1' };
-// Imagen real de la web (1408 × 768) como archivo a subir en la prueba de "Imágenes".
-const UPLOAD_IMAGE = new URL('../public/img/casa-frente-mar-1408.webp', import.meta.url);
+// Id de la imagen subida en la prueba de "Imágenes" (se usa luego al publicar).
 let uploadedId = null;
 
 const results = [];
@@ -88,26 +87,78 @@ try {
 
   if (SHOTS_DIR) await page.screenshot({ path: `${SHOTS_DIR}/admin-contenidos.png` });
 
-  await step('imágenes: subir (sin metadatos, 5 tamaños), rechazar un archivo falso y usarla en la portada', async () => {
+  await step('imágenes: carga masiva con arrastrar y soltar, miniaturas, validaciones, confirmación y 5 WebP por imagen', async () => {
     const { readFile } = await import('node:fs/promises');
+    const img = (name) => readFile(new URL(`../public/img/${name}`, import.meta.url));
+    const storageKeys = async () => (await (await fetch(`${FAKE_AUTH_URL}/__test__/storage`)).json()).keys;
+    const before = (await storageKeys()).length;
     await page.getByRole('button', { name: 'Imágenes' }).click();
     await page.getByRole('heading', { name: 'Imágenes', level: 1 }).waitFor();
-    // Archivo falso: texto con extensión .jpg y tipo image/jpeg. El navegador lo deja pasar; la API lo rechaza.
-    await page.getByLabel(/Archivo \(JPG/).setInputFiles({ name: 'foto.jpg', mimeType: 'image/jpeg', buffer: Buffer.from('<svg><script>alert(1)</script></svg>') });
-    await page.getByLabel('Descripción de la imagen (texto alternativo)').fill('Archivo que no es una imagen');
-    await page.getByRole('button', { name: 'Subir imagen' }).click();
-    await page.getByText('Formato no admitido: solo JPG, PNG o WebP.').waitFor();
-    // Imagen válida.
-    await page.getByLabel(/Archivo \(JPG/).setInputFiles({ name: 'casa.webp', mimeType: 'image/webp', buffer: await readFile(UPLOAD_IMAGE) });
-    await page.getByLabel('Descripción de la imagen (texto alternativo)').fill('Casa de prueba frente al mar');
-    await page.getByRole('button', { name: 'Subir imagen' }).click();
-    await page.getByText('Imagen subida. Ya puedes elegirla en Contenidos.').waitFor();
-    const thumb = page.getByRole('list', { name: 'Imágenes subidas' }).getByRole('img', { name: 'Casa de prueba frente al mar' });
-    await thumb.waitFor();
-    // La miniatura carga de verdad desde Storage (la CSP del panel lo permite).
-    await page.waitForFunction((el) => el.complete && el.naturalWidth === 480, await thumb.elementHandle());
-    uploadedId = /([0-9a-f-]{36})\/480\.webp$/.exec(await thumb.getAttribute('src'))[1];
-    const stored = (await (await fetch(`${FAKE_AUTH_URL}/__test__/storage`)).json()).keys.filter((k) => k.includes(uploadedId));
+    const queue = page.getByRole('list', { name: 'Imágenes para subir' });
+
+    // 1) Elegir varios archivos: uno válido y uno FALSO (texto con extensión .jpg y tipo image/jpeg).
+    await page.locator('#media-files').setInputFiles([
+      { name: 'casa.webp', mimeType: 'image/webp', buffer: await img('casa-frente-mar-1408.webp') },
+      { name: 'falsa.jpg', mimeType: 'image/jpeg', buffer: Buffer.from('<svg><script>alert(1)</script></svg>') },
+    ]);
+    await queue.getByRole('img', { name: 'Miniatura de casa.webp' }).waitFor();
+    await queue.locator('li', { hasText: 'falsa.jpg' }).getByText(/No se pudo leer la imagen/).waitFor();
+
+    // 2) Arrastrar y soltar: una válida y una demasiado chica (480 px).
+    const files = await Promise.all([
+      ['bosque.webp', 'casa-bosque-1408.webp'],
+      ['chica.webp', 'casa-bosque-480.webp'],
+    ].map(async ([name, src]) => ({ name, b64: (await img(src)).toString('base64') })));
+    const dt = await page.evaluateHandle((list) => {
+      const d = new DataTransfer();
+      for (const f of list) d.items.add(new File([Uint8Array.from(atob(f.b64), (c) => c.charCodeAt(0))], f.name, { type: 'image/webp' }));
+      return d;
+    }, files);
+    await page.dispatchEvent('[data-testid="dropzone"]', 'drop', { dataTransfer: dt });
+    await queue.getByRole('img', { name: 'Miniatura de bosque.webp' }).waitFor();
+    await queue.locator('li', { hasText: 'chica.webp' }).getByText(/Mide 480 × 262 px: el mínimo es 960 × 540/).waitFor();
+    // La miniatura local se ve de verdad (la CSP del panel permite blob: en img-src).
+    const thumb = queue.getByRole('img', { name: 'Miniatura de casa.webp' });
+    await page.waitForFunction((el) => el.complete && el.naturalWidth > 0, await thumb.elementHandle());
+    assert.match(await thumb.getAttribute('src'), /^blob:/);
+
+    if (SHOTS_DIR) await page.screenshot({ path: `${SHOTS_DIR}/admin-imagenes-cola.png`, fullPage: true });
+
+    // 3) Sin descripción: no se sube nada.
+    const submit = page.getByRole('button', { name: 'Subir 2 imágenes' });
+    await submit.click();
+    await page.getByText(/Falta la descripción .* de 2 imágenes/).waitFor();
+    await page.getByLabel('Descripción de casa.webp').fill('Casa de prueba frente al mar');
+    await page.getByLabel('Descripción de bosque.webp').fill('Casa de prueba en el bosque');
+
+    // 4) Confirmación: cancelar no sube nada.
+    await submit.click();
+    const dialog = page.getByRole('dialog', { name: '¿Subir 2 imágenes?' });
+    await dialog.waitFor();
+    if (SHOTS_DIR) await page.screenshot({ path: `${SHOTS_DIR}/admin-imagenes-confirmar.png` });
+    await dialog.getByRole('button', { name: 'Cancelar' }).click();
+    await dialog.waitFor({ state: 'hidden' });
+    assert.equal((await storageKeys()).length, before, 'cancelar no debe subir nada');
+
+    // 5) Confirmar: se suben de a una y cada una genera 5 WebP en Storage.
+    await submit.click();
+    await dialog.getByRole('button', { name: 'Sí, subir' }).click();
+    await page.getByText('Se subieron 2 imágenes. Ya puedes elegirlas en Contenidos.').waitFor();
+    if (SHOTS_DIR) await page.screenshot({ path: `${SHOTS_DIR}/admin-imagenes-subidas.png`, fullPage: true });
+    // "Limpiar lista" quita las subidas y las no válidas (falsa.jpg y chica.webp).
+    await page.getByRole('button', { name: 'Subir imágenes', exact: true }).waitFor();
+    await page.getByRole('button', { name: /Limpiar lista/ }).click();
+    await queue.waitFor({ state: 'detached' });
+    assert.equal((await storageKeys()).length, before + 10);
+
+    // 6) Aparecen en la biblioteca con su miniatura servida desde Storage.
+    const lib = page.getByRole('list', { name: 'Imágenes subidas' });
+    const uploaded = lib.getByRole('img', { name: 'Casa de prueba frente al mar' });
+    await uploaded.waitFor();
+    await lib.getByRole('img', { name: 'Casa de prueba en el bosque' }).waitFor();
+    await page.waitForFunction((el) => el.complete && el.naturalWidth === 480, await uploaded.elementHandle());
+    uploadedId = /([0-9a-f-]{36})\/480\.webp$/.exec(await uploaded.getAttribute('src'))[1];
+    const stored = (await storageKeys()).filter((k) => k.includes(uploadedId));
     assert.deepEqual(stored.sort(), ['1408', '480', '768', 'hero-1408', 'hero-768'].map((n) => `privat-media/${uploadedId}/${n}.webp`).sort());
 
     // Elegirla en la portada: la vista previa aparece y se guarda en el borrador.
@@ -121,9 +172,10 @@ try {
 
     // En uso: no se puede borrar.
     await page.getByRole('button', { name: 'Imágenes' }).click();
-    await page.getByRole('button', { name: 'Borrar…' }).first().click();
-    await page.getByRole('button', { name: 'Confirmar borrado' }).click();
-    await page.getByText(/se usa en el contenido/).waitFor();
+    const card = page.getByRole('list', { name: 'Imágenes subidas' }).locator('li', { has: page.getByRole('img', { name: 'Casa de prueba frente al mar' }) });
+    await card.getByRole('button', { name: 'Borrar…' }).click();
+    await card.getByRole('button', { name: 'Confirmar borrado' }).click();
+    await card.getByText(/se usa en el contenido/).waitFor();
   });
 
   await step('precios: configurar perfil Casa premium nivel 3', async () => {

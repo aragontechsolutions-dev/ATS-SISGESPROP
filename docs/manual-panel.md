@@ -108,18 +108,28 @@ Si un dato no es válido (por ejemplo, un texto demasiado largo o un enlace que 
 
 Para usar fotos propias en la web:
 
-1. **Subir:** elija el archivo (JPG, PNG o WebP; hasta 10 MB; al menos 960 × 540 px), escriba una
-   **descripción** de lo que se ve (la leen los lectores de pantalla y Google) y pulse **Subir
-   imagen**. Puede tardar unos segundos.
-2. La imagen se **recorta en formato horizontal** (16:9) y se le **quitan los datos ocultos**: la
-   ubicación GPS donde se sacó la foto, el modelo de la cámara, etc. Revise la miniatura: si el
+1. **Agregar imágenes:** **arrástrelas** al recuadro "Arrastra aquí las imágenes" o pulse **Elegir
+   imágenes** (se pueden elegir varias a la vez). Hasta **10 por tanda**; JPG, PNG o WebP; hasta
+   10 MB cada una; al menos 960 × 540 px.
+2. **Revise la lista:** cada imagen muestra su **miniatura**, nombre y peso. Las que no se pueden
+   subir (formato no admitido, muy chicas, más de 10 MB o archivo dañado) se marcan en rojo con el
+   motivo; quítelas con **Quitar**.
+3. **Escriba la descripción de cada imagen** (lo que se ve; la leen los lectores de pantalla y
+   Google). Es obligatoria.
+4. Pulse **Subir N imágenes**. Aparece una **confirmación** con las miniaturas y el peso total:
+   **Sí, subir** o **Cancelar** (no se sube nada).
+5. Se suben **de a una**: cada imagen muestra "Subiendo…", "✓ Subida" o el error. Si alguna falla,
+   corrija y vuelva a pulsar el botón: solo se reintentan las que faltan.
+6. **Limpiar lista** quita las ya subidas y las no válidas.
+7. La imagen se **recorta en formato horizontal** (16:9) y se le **quitan los datos ocultos** (la
+   ubicación GPS, el modelo de la cámara, etc.). Revise la miniatura en "Imágenes subidas": si el
    recorte no queda bien, use una foto más horizontal.
-3. **Usarla:** vaya a *Contenidos*, elija la sección (por ejemplo *Portada*) y en **Imagen** elija la
+8. **Usarla:** vaya a *Contenidos*, elija la sección (por ejemplo *Portada*) y en **Imagen** elija la
    foto en el grupo "Imágenes subidas". Guarde el borrador y **publique**.
-4. **Descripción:** se puede corregir en cada imagen con **Guardar descripción**.
-5. **Borrar:** **Borrar…** → **Confirmar borrado**. No se puede borrar una imagen que se usa en el
-   contenido ni una que se usó en una publicación anterior (se puede restaurar). Primero cámbiela por
-   otra.
+9. **Descripción:** se puede corregir en cada imagen subida con **Guardar descripción**.
+10. **Borrar:** **Borrar…** → **Confirmar borrado**. No se puede borrar una imagen que se usa en el
+    contenido ni una que se usó en una publicación anterior (se puede restaurar). Primero cámbiela
+    por otra.
 
 Cuidados:
 - Las imágenes son **públicas** (como toda la web). No suba fotos con datos privados visibles

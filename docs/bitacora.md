@@ -593,3 +593,31 @@ con un plan F1/F2/F3 pendiente de aprobación.
 - `npm audit`: 0 vulnerabilidades.
 
 **Siguiente:** activar en producción (§7.2 de despliegue.md) y recibir los 15 perfiles del cliente.
+
+## 2026-11-12 – Subida masiva de imágenes en el panel
+
+Pedido: carga masiva, miniaturas, confirmación antes de subir y arrastrar y soltar. En 3 etapas:
+1. **U1:** componente `BulkUpload` (`apps/web/src/admin/BulkUpload.tsx`):
+   - arrastrar y soltar o elegir varios archivos (hasta 10 por tanda);
+   - miniatura de cada uno;
+   - validación previa en el navegador (formato, 10 MB, 960 × 540, archivo legible);
+   - descripción obligatoria por imagen;
+   - confirmación con `<dialog>` nativo (miniaturas y peso total);
+   - subida de a una con estado por imagen, reintento de las fallidas y "Limpiar lista".
+   Se eliminó el formulario anterior de una sola imagen.
+2. **U2:** CSP del panel con `blob:` solo en `img-src`. e2e del panel reescrito:
+   - archivo falso y una imagen chica rechazados en el navegador;
+   - arrastrar y soltar real (DataTransfer);
+   - descripción obligatoria;
+   - cancelar no sube nada;
+   - confirmar sube 2 imágenes = 10 WebP en Storage.
+   3 auditorías axe nuevas.
+3. **U3:** revisión de seguridad (ADR-020, actualización) y documentación (manual §3.1, seguridad).
+
+**Ajustes tras revisar las capturas**
+- El archivo falso mostraba el ícono de "imagen rota": ahora "Sin vista previa".
+- "0,0 MB" en archivos chicos: ahora en KB.
+- 3 columnas en pantallas grandes.
+- El botón decía "Subir 0 imágenes": ahora "Subir imágenes" (deshabilitado).
+
+**Pruebas:** e2e en limpio landing 16, panel 20, accesibilidad 22; tipos OK. La API no cambió.

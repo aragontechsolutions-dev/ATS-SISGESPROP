@@ -95,7 +95,9 @@ const adminCsp = [
   "script-src 'self'",
   // nominatim: búsqueda de la dirección de la base en el mapa del panel (BaseLocationMap).
   `connect-src 'self' ${apiOrigin}${supabaseOrigin ? ` ${supabaseOrigin}` : ''} https://nominatim.openstreetmap.org`,
-  `img-src 'self' data: https://tile.openstreetmap.org${supabaseImg}`,
+  // blob: solo en img-src del panel: miniaturas locales de las imágenes elegidas antes de subirlas
+  // (BulkUpload). No habilita scripts ni conexiones.
+  `img-src 'self' data: blob: https://tile.openstreetmap.org${supabaseImg}`,
   "style-src 'self'",
   "font-src 'self'",
   "object-src 'none'",
