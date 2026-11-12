@@ -61,8 +61,9 @@ try {
       await page.getByText('Revisá los datos marcados antes de continuar.').waitFor();
       assert.equal(await page.getByText('Este dato es obligatorio.').count(), 1);
       assert.equal(await page.getByText('Elegí una opción.').count(), 2);
-      // El foco va al primer dato con error.
-      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('autocomplete')), 'name');
+      // El foco va al primer dato con error. Se mueve en el siguiente cuadro (requestAnimationFrame):
+      // se ESPERA a que llegue, no se mira una sola vez (en el CI, más lento, era una carrera).
+      await page.waitForFunction(() => document.activeElement?.getAttribute('autocomplete') === 'name', null, { timeout: 5000 });
       await audit(page, 'etapa 1 con errores');
       await page.getByLabel('¿Cómo te llamás?').fill('Ana Pérez');
       await choose('¿En qué país residís habitualmente?', 'Otro');
