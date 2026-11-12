@@ -1,10 +1,9 @@
-import { useRef, useState, type FormEvent } from 'react';
-import { adminFetch, adminJson, send } from '../http';
+import { useState, type FormEvent } from 'react';
+import { BulkUpload } from '../BulkUpload';
+import { adminJson, send } from '../http';
 import { refreshMediaLibrary, useMediaLibrary, type MediaItem } from '../media';
 import { Alert, errorStatus, PageTitle, Panel, type Status } from '../ui';
 
-const MAX_BYTES = 10 * 1024 * 1024;
-const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 /** Mismas reglas que la API (MediaAltDto): el servidor vuelve a validar. */
 const ALT_MIN = 5;
 const ALT_MAX = 150;
@@ -26,7 +25,7 @@ export function MediaPage() {
         <Alert kind="info" message="La subida de imágenes todavía no está activada."
           details={['Falta configurar la clave secreta de Supabase Storage en el servidor (ver docs/despliegue.md, sección Imágenes).']} />
       )}
-      {lib?.uploadEnabled && <UploadForm />}
+      {lib?.uploadEnabled && <BulkUpload />}
       <Panel title={`Imágenes subidas (${lib?.items.length ?? 0})`}>
         {!lib && !error && <p>Cargando…</p>}
         {lib && lib.items.length === 0 && <p className="text-sm text-text-secondary">Todavía no hay imágenes subidas. La web usa las imágenes incluidas.</p>}
@@ -35,58 +34,6 @@ export function MediaPage() {
         </ul>
       </Panel>
     </>
-  );
-}
-
-function UploadForm() {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [alt, setAlt] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<Status>(null);
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    const file = fileRef.current?.files?.[0];
-    if (!file) return setStatus({ kind: 'error', message: 'Elige una imagen.' });
-    if (!ACCEPTED.includes(file.type)) return setStatus({ kind: 'error', message: 'Formato no admitido: solo JPG, PNG o WebP.' });
-    if (file.size > MAX_BYTES) return setStatus({ kind: 'error', message: 'La imagen supera los 10 MB.' });
-    if (alt.trim().length < ALT_MIN) return setStatus({ kind: 'error', message: `Describe la imagen (mínimo ${ALT_MIN} caracteres).` });
-    const form = new FormData();
-    form.append('file', file);
-    form.append('alt', alt.trim());
-    setBusy(true);
-    setStatus({ kind: 'info', message: 'Subiendo y procesando la imagen…' });
-    try {
-      // Procesar fotos grandes puede tardar: margen mayor que el de las demás operaciones.
-      await adminFetch('/admin/media', { method: 'POST', body: form, signal: AbortSignal.timeout(120_000) });
-      setStatus({ kind: 'ok', message: 'Imagen subida. Ya puedes elegirla en Contenidos.' });
-      setAlt('');
-      if (fileRef.current) fileRef.current.value = '';
-      refreshMediaLibrary();
-    } catch (err) {
-      setStatus(errorStatus(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Panel title="Subir imagen">
-      <form onSubmit={(e) => void submit(e)} className="space-y-4" aria-label="Subir imagen">
-        <div>
-          <label htmlFor="media-file" className="label">Archivo (JPG, PNG o WebP; hasta 10 MB; mínimo 960 × 540 px)</label>
-          <input id="media-file" ref={fileRef} type="file" accept={ACCEPTED.join(',')} className="field" required />
-        </div>
-        <div>
-          <label htmlFor="media-alt" className="label">Descripción de la imagen (texto alternativo)</label>
-          <input id="media-alt" className="field" value={alt} minLength={ALT_MIN} maxLength={ALT_MAX} required
-            placeholder="Ej.: Casa con piscina y jardín en Punta del Este" onChange={(e) => setAlt(e.target.value)} />
-          <p className="mt-1 text-xs text-text-secondary">La leen los lectores de pantalla y Google. Describe lo que se ve, sin datos personales.</p>
-        </div>
-        <button className="btn-primary" disabled={busy}>{busy ? 'Subiendo…' : 'Subir imagen'}</button>
-        {status && <Alert {...status} />}
-      </form>
-    </Panel>
   );
 }
 

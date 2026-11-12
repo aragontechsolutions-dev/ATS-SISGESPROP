@@ -69,6 +69,27 @@ ningún lado"). Ahora la API necesita una para escribir en Storage.
   - la API rechaza la clave pública (`sb_publishable_…`) y valores entre comillas;
   - es **opcional**: sin ella la API arranca igual y la subida responde 503 (no rompe el despliegue).
 
+## Actualización 12/11/2026: subida masiva en el panel
+
+A pedido del usuario, la pestaña *Imágenes* pasó a admitir carga masiva:
+- arrastrar y soltar o elegir varios archivos, **hasta 10 por tanda** (la API acepta 20 subidas por
+  minuto y procesa de a una);
+- **miniatura** de cada archivo antes de subir;
+- **descripción por imagen**, obligatoria (la misma descripción para fotos distintas no sirve para
+  accesibilidad ni SEO);
+- **confirmación** con miniaturas y peso total;
+- **estado por imagen**; las fallidas se pueden reintentar.
+
+Seguridad:
+- La API no cambia: lo que se revisa en el navegador (formato, peso, dimensiones, que se pueda
+  leer) es solo para avisar antes.
+- Las miniaturas son URLs locales `blob:` del archivo elegido: no salen del navegador y se liberan
+  al quitarlas o salir.
+- Por eso la CSP del **panel** suma `blob:` **solo en `img-src`** (no en scripts ni conexiones);
+  la de la landing no cambia.
+- Soltar un archivo fuera de la zona no lo abre en la pestaña (se perdería la sesión).
+- Ante 429 (límite) o 401 (sesión) la tanda se detiene y las restantes quedan para reintentar.
+
 ## Alternativas descartadas
 
 - **Subida directa del navegador con URL firmada de subida:** más simple para el servidor, pero el
